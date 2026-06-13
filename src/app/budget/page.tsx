@@ -132,13 +132,13 @@ export default function BudgetPage() {
   const totalBudgeted = Object.values(budgets).reduce((a, b) => a + b, 0);
   const plannedSavings = expectedIncome - totalBudgeted;
 
-  const monthsDiff = () => {
+  const monthsDiff = (() => {
     if (!targetDate) return 0;
     const now = new Date();
     const [year, month] = targetDate.split('-').map(Number);
     const months = (year - now.getFullYear()) * 12 + (month - (now.getMonth() + 1));
     return Math.max(0, months);
-  }();
+  })();
 
   const projectedTotal = currentBalance + (plannedSavings * monthsDiff);
 

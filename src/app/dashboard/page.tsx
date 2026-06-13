@@ -40,7 +40,9 @@ export default function DashboardPage() {
 
       if (bgRes.data && !bgRes.error) {
         const bMap: Record<string, number> = {};
-        bgRes.data.forEach((b: any) => bMap[b.category] = Number(b.amount));
+        bgRes.data.forEach((b: any) => {
+          bMap[b.category] = (bMap[b.category] || 0) + Number(b.amount);
+        });
         setBudgets(bMap);
       }
 

@@ -31,8 +31,11 @@ export default function BudgetPage() {
         return;
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const [budgetsRes, txRes] = await Promise.all([
-        supabase.from("budgets").select("*"),
+        supabase.from("budgets").select("*").eq("user_id", user.id),
         supabase.from("transactions").select("*")
       ]);
 

@@ -1,6 +1,6 @@
 import { 
   Zap, ShoppingCart, CreditCard, Droplet, Home, Coffee, 
-  Briefcase, Gift, Wallet, Utensils, Wrench, Gamepad2, GraduationCap 
+  Briefcase, Gift, Wallet, Utensils, Wrench, Gamepad2, GraduationCap, Users 
 } from "lucide-react";
 
 export const EXPENSE_CATEGORIES = [
@@ -13,6 +13,7 @@ export const EXPENSE_CATEGORIES = [
   { id: "home_upgrades", label: "Home Upgrades", icon: Wrench, color: "#06b6d4" },
   { id: "gaming", label: "Gaming/Ent.", icon: Gamepad2, color: "#6366f1" },
   { id: "school_fees", label: "School Fees", icon: GraduationCap, color: "#f43f5e" },
+  { id: "family", label: "Family Exp.", icon: Users, color: "#d946ef" },
   { id: "other", label: "Other", icon: Coffee, color: "#a1a1aa" },
 ];
 

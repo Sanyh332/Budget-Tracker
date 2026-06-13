@@ -70,7 +70,7 @@ export default function AddTransactionPage() {
         <div className="card" style={{ padding: "2rem 1rem", textAlign: "center" }}>
           <p className="text-sm" style={{ marginBottom: "0.5rem" }}>Amount</p>
           <div className="flex items-center justify-center gap-2 text-h1" style={{ fontSize: "3rem" }}>
-            <span style={{ color: "var(--text-secondary)" }}>$</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: "1.5rem" }}>MVR</span>
             <input
               type="number"
               value={amount}

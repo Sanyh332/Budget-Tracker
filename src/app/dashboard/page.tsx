@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
+  const [categoryBreakdown, setCategoryBreakdown] = useState<[string, number][]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +58,14 @@ export default function DashboardPage() {
         
         const sum = thisMonth.reduce((acc, curr) => acc + Number(curr.amount), 0);
         setTotal(sum);
+        
+        // Calculate breakdown by category for this month
+        const breakdown = thisMonth.reduce((acc, curr) => {
+          acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
+          return acc;
+        }, {} as Record<string, number>);
+        
+        setCategoryBreakdown(Object.entries(breakdown).sort((a, b) => b[1] - a[1]));
       }
       
       setLoading(false);
@@ -91,9 +100,38 @@ export default function DashboardPage() {
       {/* Monthly Summary Card */}
       <div className="card" style={{ marginBottom: "2rem", background: "linear-gradient(135deg, var(--accent-primary), var(--accent-hover))", color: "white", border: "none" }}>
         <p style={{ fontSize: "0.875rem", opacity: 0.9 }}>Total Spend this Month</p>
-        <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0" }}>${total.toFixed(2)}</h2>
+        <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0" }}>MVR {total.toFixed(2)}</h2>
         <p style={{ fontSize: "0.875rem", opacity: 0.9 }}>{transactions.length} total transactions</p>
       </div>
+
+      {/* Category Breakdown */}
+      {categoryBreakdown.length > 0 && (
+        <div className="flex flex-col gap-3" style={{ marginBottom: "2rem" }}>
+          <h3 style={{ fontWeight: 600 }}>Spending by Category</h3>
+          <div className="card flex flex-col gap-4">
+            {categoryBreakdown.map(([catId, amount]) => {
+              const cat = getCategoryDetails(catId);
+              const Icon = cat.icon;
+              const percentage = total > 0 ? (amount / total) * 100 : 0;
+              
+              return (
+                <div key={catId} className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <Icon size={16} color={cat.color} />
+                      <span style={{ fontWeight: 500 }}>{cat.label}</span>
+                    </div>
+                    <span style={{ fontWeight: 600 }}>MVR {amount.toFixed(2)}</span>
+                  </div>
+                  <div style={{ width: "100%", height: "8px", backgroundColor: "var(--border)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
+                    <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: cat.color, borderRadius: "var(--radius-full)", transition: "width 0.5s ease" }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Categories / Recent */}
       <div className="flex flex-col gap-4">
@@ -124,7 +162,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontWeight: 600 }}>-${Number(t.amount).toFixed(2)}</p>
+                    <p style={{ fontWeight: 600 }}>-MVR {Number(t.amount).toFixed(2)}</p>
                     <p className="text-sm" style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
                       {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </p>

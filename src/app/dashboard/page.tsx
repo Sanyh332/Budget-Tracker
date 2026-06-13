@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { Plus, LogOut, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee } from "lucide-react";
+import { Plus, LogOut, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee, ArrowUpRight, ArrowDownRight, Briefcase, Gift, Wallet, X } from "lucide-react";
 import Link from "next/link";
 
 type Transaction = {
@@ -12,6 +12,7 @@ type Transaction = {
   category: string;
   notes: string | null;
   created_at: string;
+  type: "income" | "expense";
 };
 
 const getCategoryDetails = (category: string) => {
@@ -21,6 +22,9 @@ const getCategoryDetails = (category: string) => {
     case "subscriptions": return { icon: CreditCard, color: "#8b5cf6", label: "Subscriptions" };
     case "fuel": return { icon: Droplet, color: "#ef4444", label: "Fuel" };
     case "loans": return { icon: Home, color: "#3b82f6", label: "Loans" };
+    case "salary": return { icon: Briefcase, color: "#10b981", label: "Salary" };
+    case "gift": return { icon: Gift, color: "#f59e0b", label: "Gift" };
+    case "opening_balance": return { icon: Wallet, color: "#3b82f6", label: "Opening Balance" };
     default: return { icon: Coffee, color: "#a1a1aa", label: "Other" };
   }
 };
@@ -29,8 +33,17 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [total, setTotal] = useState(0);
+  
+  // Balances
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [incomeThisMonth, setIncomeThisMonth] = useState(0);
+  const [spentThisMonth, setSpentThisMonth] = useState(0);
+  
+  // Breakdown
   const [categoryBreakdown, setCategoryBreakdown] = useState<[string, number][]>([]);
+  
+  // UI State
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,7 +53,7 @@ export default function DashboardPage() {
         return;
       }
 
-      // Fetch transactions
+      // Fetch all transactions to calculate full balance
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -49,23 +62,38 @@ export default function DashboardPage() {
       if (data && !error) {
         setTransactions(data);
         
-        // Calculate this month's total
+        // Calculate Total Balance (all time)
+        const balance = data.reduce((acc, curr) => {
+          // If type is missing, treat as expense for backward compatibility
+          const type = curr.type || "expense";
+          return type === "income" ? acc + Number(curr.amount) : acc - Number(curr.amount);
+        }, 0);
+        setCurrentBalance(balance);
+
+        // Calculate this month's stats
         const now = new Date();
         const thisMonth = data.filter(t => {
           const d = new Date(t.created_at);
           return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         });
         
-        const sum = thisMonth.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        setTotal(sum);
-        
-        // Calculate breakdown by category for this month
-        const breakdown = thisMonth.reduce((acc, curr) => {
-          acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
-          return acc;
-        }, {} as Record<string, number>);
-        const entries = Object.entries(breakdown) as [string, number][];
-        setCategoryBreakdown(entries.sort((a, b) => b[1] - a[1]));
+        let incMonth = 0;
+        let expMonth = 0;
+        const breakdown: Record<string, number> = {};
+
+        thisMonth.forEach(t => {
+          const type = t.type || "expense";
+          if (type === "income") {
+            incMonth += Number(t.amount);
+          } else {
+            expMonth += Number(t.amount);
+            breakdown[t.category] = (breakdown[t.category] || 0) + Number(t.amount);
+          }
+        });
+
+        setIncomeThisMonth(incMonth);
+        setSpentThisMonth(expMonth);
+        setCategoryBreakdown(Object.entries(breakdown).sort((a, b) => b[1] - a[1]));
       }
       
       setLoading(false);
@@ -97,22 +125,38 @@ export default function DashboardPage() {
         </button>
       </header>
 
-      {/* Monthly Summary Card */}
-      <div className="card" style={{ marginBottom: "2rem", background: "linear-gradient(135deg, var(--accent-primary), var(--accent-hover))", color: "white", border: "none" }}>
-        <p style={{ fontSize: "0.875rem", opacity: 0.9 }}>Total Spend this Month</p>
-        <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0" }}>MVR {total.toFixed(2)}</h2>
-        <p style={{ fontSize: "0.875rem", opacity: 0.9 }}>{transactions.length} total transactions</p>
+      {/* Main Balance Card */}
+      <div className="card" style={{ marginBottom: "2rem", background: "linear-gradient(135deg, var(--bg-elevated), var(--bg-secondary))", border: "1px solid var(--border)" }}>
+        <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>Current Balance</p>
+        <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
+          MVR {currentBalance.toFixed(2)}
+        </h2>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid var(--border)" }}>
+          <div>
+            <div className="flex items-center gap-1 text-sm mb-1 text-success">
+              <ArrowUpRight size={16} /> Income
+            </div>
+            <p style={{ fontWeight: 600 }}>MVR {incomeThisMonth.toFixed(2)}</p>
+          </div>
+          <div>
+            <div className="flex items-center gap-1 text-sm mb-1 text-danger">
+              <ArrowDownRight size={16} /> Spent
+            </div>
+            <p style={{ fontWeight: 600 }}>MVR {spentThisMonth.toFixed(2)}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Category Breakdown */}
+      {/* Expense Category Breakdown (Only show if there are expenses this month) */}
       {categoryBreakdown.length > 0 && (
         <div className="flex flex-col gap-3" style={{ marginBottom: "2rem" }}>
-          <h3 style={{ fontWeight: 600 }}>Spending by Category</h3>
+          <h3 style={{ fontWeight: 600 }}>Spending this Month</h3>
           <div className="card flex flex-col gap-4">
             {categoryBreakdown.map(([catId, amount]) => {
               const cat = getCategoryDetails(catId);
               const Icon = cat.icon;
-              const percentage = total > 0 ? (amount / total) * 100 : 0;
+              const percentage = spentThisMonth > 0 ? (amount / spentThisMonth) * 100 : 0;
               
               return (
                 <div key={catId} className="flex flex-col gap-2">
@@ -133,7 +177,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Categories / Recent */}
+      {/* Recent Transactions */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <h3 style={{ fontWeight: 600 }}>Recent Transactions</h3>
@@ -150,6 +194,8 @@ export default function DashboardPage() {
             {transactions.slice(0, 10).map((t) => {
               const cat = getCategoryDetails(t.category);
               const Icon = cat.icon;
+              const isIncome = (t.type || "expense") === "income";
+              
               return (
                 <div key={t.id} className="card flex items-center justify-between" style={{ padding: "1rem" }}>
                   <div className="flex items-center gap-3">
@@ -162,7 +208,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontWeight: 600 }}>-MVR {Number(t.amount).toFixed(2)}</p>
+                    <p style={{ fontWeight: 600, color: isIncome ? "var(--success)" : "var(--text-primary)" }}>
+                      {isIncome ? "+" : "-"}MVR {Number(t.amount).toFixed(2)}
+                    </p>
                     <p className="text-sm" style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
                       {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </p>
@@ -174,10 +222,44 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Action Menu Backdrop */}
+      {showActionMenu && (
+        <div 
+          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 40 }}
+          onClick={() => setShowActionMenu(false)}
+        />
+      )}
+
+      {/* Action Menu Items */}
+      {showActionMenu && (
+        <div className="animate-slide-up" style={{ position: "fixed", bottom: "6rem", right: "2rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem", alignItems: "flex-end" }}>
+          <Link href="/add-income" className="flex items-center gap-3">
+            <span style={{ backgroundColor: "var(--bg-elevated)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontWeight: 500, boxShadow: "var(--shadow-md)" }}>
+              Add Income
+            </span>
+            <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", backgroundColor: "var(--success)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", boxShadow: "var(--shadow-md)" }}>
+              <ArrowUpRight size={20} />
+            </div>
+          </Link>
+          <Link href="/add-transaction" className="flex items-center gap-3">
+            <span style={{ backgroundColor: "var(--bg-elevated)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontWeight: 500, boxShadow: "var(--shadow-md)" }}>
+              Add Expense
+            </span>
+            <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", backgroundColor: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", boxShadow: "var(--shadow-md)" }}>
+              <ArrowDownRight size={20} />
+            </div>
+          </Link>
+        </div>
+      )}
+
       {/* FAB */}
-      <Link href="/add-transaction" className="fab">
+      <button 
+        className="fab" 
+        onClick={() => setShowActionMenu(!showActionMenu)}
+        style={{ transform: showActionMenu ? "rotate(45deg)" : "none", transition: "transform 0.2s ease" }}
+      >
         <Plus size={24} />
-      </Link>
+      </button>
     </div>
   );
 }

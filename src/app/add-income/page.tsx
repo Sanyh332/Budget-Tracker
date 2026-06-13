@@ -3,22 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { ArrowLeft, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee } from "lucide-react";
+import { ArrowLeft, Briefcase, Gift, Wallet } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = [
-  { id: "utilities", label: "Utilities", icon: Zap, color: "#f59e0b" },
-  { id: "groceries", label: "Groceries", icon: ShoppingCart, color: "#10b981" },
-  { id: "subscriptions", label: "Subscriptions", icon: CreditCard, color: "#8b5cf6" },
-  { id: "fuel", label: "Fuel", icon: Droplet, color: "#ef4444" },
-  { id: "loans", label: "Loans", icon: Home, color: "#3b82f6" },
-  { id: "other", label: "Other", icon: Coffee, color: "#a1a1aa" },
+  { id: "salary", label: "Salary", icon: Briefcase, color: "#10b981" },
+  { id: "gift", label: "Gift", icon: Gift, color: "#f59e0b" },
+  { id: "opening_balance", label: "Opening Balance", icon: Wallet, color: "#3b82f6" },
 ];
 
-export default function AddTransactionPage() {
+export default function AddIncomePage() {
   const router = useRouter();
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("groceries");
+  const [category, setCategory] = useState("salary");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,14 +40,14 @@ export default function AddTransactionPage() {
           amount: Number(amount),
           category,
           notes: notes || null,
-          type: "expense",
+          type: "income",
         });
 
       if (dbError) throw dbError;
       
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Failed to save transaction");
+      setError(err.message || "Failed to save income");
       setLoading(false);
     }
   };
@@ -61,7 +58,7 @@ export default function AddTransactionPage() {
         <Link href="/dashboard" className="btn-icon">
           <ArrowLeft size={24} />
         </Link>
-        <h1 className="text-h2">Add Expense</h1>
+        <h1 className="text-h2">Add Income</h1>
       </header>
 
       {error && <div className="text-danger text-sm mb-4">{error}</div>}
@@ -84,7 +81,7 @@ export default function AddTransactionPage() {
                 background: "transparent",
                 border: "none",
                 outline: "none",
-                color: "inherit",
+                color: "var(--success)",
                 fontSize: "inherit",
                 fontWeight: "inherit",
                 width: amount.length > 0 ? `${amount.length + 1}ch` : "4ch",
@@ -121,7 +118,7 @@ export default function AddTransactionPage() {
                   }}
                 >
                   <Icon size={24} />
-                  <span style={{ fontSize: "0.75rem", fontWeight: isSelected ? 600 : 400 }}>{cat.label}</span>
+                  <span style={{ fontSize: "0.75rem", fontWeight: isSelected ? 600 : 400, textAlign: "center" }}>{cat.label}</span>
                 </button>
               );
             })}
@@ -142,12 +139,12 @@ export default function AddTransactionPage() {
 
         {/* Submit */}
         <button 
-          className="btn btn-primary" 
-          style={{ padding: "1rem", fontSize: "1.125rem", marginTop: "1rem" }}
+          className="btn" 
+          style={{ padding: "1rem", fontSize: "1.125rem", marginTop: "1rem", backgroundColor: "var(--success)", color: "white", border: "none" }}
           onClick={handleSave}
           disabled={loading}
         >
-          {loading ? "Saving..." : "Save Transaction"}
+          {loading ? "Saving..." : "Save Income"}
         </button>
       </div>
     </div>

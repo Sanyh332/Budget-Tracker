@@ -3,31 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { Plus, LogOut, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee, ArrowUpRight, ArrowDownRight, Briefcase, Gift, Wallet, X } from "lucide-react";
+import { Plus, LogOut, ArrowUpRight, ArrowDownRight, X } from "lucide-react";
 import Link from "next/link";
-
-type Transaction = {
-  id: string;
-  amount: number;
-  category: string;
-  notes: string | null;
-  created_at: string;
-  type: "income" | "expense";
-};
-
-const getCategoryDetails = (category: string) => {
-  switch (category) {
-    case "utilities": return { icon: Zap, color: "#f59e0b", label: "Utilities" };
-    case "groceries": return { icon: ShoppingCart, color: "#10b981", label: "Groceries" };
-    case "subscriptions": return { icon: CreditCard, color: "#8b5cf6", label: "Subscriptions" };
-    case "fuel": return { icon: Droplet, color: "#ef4444", label: "Fuel" };
-    case "loans": return { icon: Home, color: "#3b82f6", label: "Loans" };
-    case "salary": return { icon: Briefcase, color: "#10b981", label: "Salary" };
-    case "gift": return { icon: Gift, color: "#f59e0b", label: "Gift" };
-    case "opening_balance": return { icon: Wallet, color: "#3b82f6", label: "Opening Balance" };
-    default: return { icon: Coffee, color: "#a1a1aa", label: "Other" };
-  }
-};
+import { getCategoryDetails } from "@/utils/categories";
+import { Transaction } from "@/utils/types";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -39,8 +18,9 @@ export default function DashboardPage() {
   const [incomeThisMonth, setIncomeThisMonth] = useState(0);
   const [spentThisMonth, setSpentThisMonth] = useState(0);
   
-  // Breakdown
+  // Breakdown & Budgets
   const [categoryBreakdown, setCategoryBreakdown] = useState<[string, number][]>([]);
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
   
   // UI State
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -53,13 +33,19 @@ export default function DashboardPage() {
         return;
       }
 
-      // Fetch all transactions to calculate full balance
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [txRes, bgRes] = await Promise.all([
+        supabase.from("transactions").select("*").order("created_at", { ascending: false }),
+        supabase.from("budgets").select("*")
+      ]);
 
-      if (data && !error) {
+      if (bgRes.data && !bgRes.error) {
+        const bMap: Record<string, number> = {};
+        bgRes.data.forEach((b: any) => bMap[b.category] = Number(b.amount));
+        setBudgets(bMap);
+      }
+
+      if (txRes.data && !txRes.error) {
+        const data = txRes.data;
         setTransactions(data);
         
         // Calculate Total Balance (all time)
@@ -156,19 +142,35 @@ export default function DashboardPage() {
             {categoryBreakdown.map(([catId, amount]) => {
               const cat = getCategoryDetails(catId);
               const Icon = cat.icon;
-              const percentage = spentThisMonth > 0 ? (amount / spentThisMonth) * 100 : 0;
+              const budgetLimit = budgets[catId] || 0;
+              const hasBudget = budgetLimit > 0;
+              
+              let percentage = 0;
+              if (hasBudget) {
+                percentage = Math.min((amount / budgetLimit) * 100, 100);
+              } else if (spentThisMonth > 0) {
+                percentage = (amount / spentThisMonth) * 100;
+              }
+
+              const isOverBudget = hasBudget && amount > budgetLimit;
+              const barColor = isOverBudget ? "var(--danger)" : cat.color;
               
               return (
                 <div key={catId} className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex justify-between items-end text-sm">
                     <div className="flex items-center gap-2">
                       <Icon size={16} color={cat.color} />
                       <span style={{ fontWeight: 500 }}>{cat.label}</span>
                     </div>
-                    <span style={{ fontWeight: 600 }}>MVR {amount.toFixed(2)}</span>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontWeight: 600, color: isOverBudget ? "var(--danger)" : "inherit" }}>
+                        MVR {amount.toFixed(2)}
+                      </span>
+                      {hasBudget && <span className="text-secondary" style={{ fontSize: "0.75rem" }}> / {budgetLimit.toFixed(0)}</span>}
+                    </div>
                   </div>
                   <div style={{ width: "100%", height: "8px", backgroundColor: "var(--border)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
-                    <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: cat.color, borderRadius: "var(--radius-full)", transition: "width 0.5s ease" }}></div>
+                    <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: barColor, borderRadius: "var(--radius-full)", transition: "width 0.5s ease" }}></div>
                   </div>
                 </div>
               );

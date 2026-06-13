@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, List } from "lucide-react";
+import { Home, List, PieChart } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -34,6 +34,18 @@ export default function BottomNav() {
       }}>
         <Home size={24} />
         <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>Home</span>
+      </Link>
+
+      <Link href="/budget" style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0.25rem",
+        color: pathname === "/budget" ? "var(--accent-primary)" : "var(--text-secondary)",
+        textDecoration: "none"
+      }}>
+        <PieChart size={24} />
+        <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>Budget</span>
       </Link>
 
       <Link href="/transactions" style={{

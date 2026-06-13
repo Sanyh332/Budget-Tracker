@@ -3,23 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { ArrowLeft, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee, Briefcase, Gift, Wallet, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
-
-const EXPENSE_CATEGORIES = [
-  { id: "utilities", label: "Utilities", icon: Zap, color: "#f59e0b" },
-  { id: "groceries", label: "Groceries", icon: ShoppingCart, color: "#10b981" },
-  { id: "subscriptions", label: "Subscriptions", icon: CreditCard, color: "#8b5cf6" },
-  { id: "fuel", label: "Fuel", icon: Droplet, color: "#ef4444" },
-  { id: "loans", label: "Loans", icon: Home, color: "#3b82f6" },
-  { id: "other", label: "Other", icon: Coffee, color: "#a1a1aa" },
-];
-
-const INCOME_CATEGORIES = [
-  { id: "salary", label: "Salary", icon: Briefcase, color: "#10b981" },
-  { id: "gift", label: "Gift", icon: Gift, color: "#f59e0b" },
-  { id: "opening_balance", label: "Opening Balance", icon: Wallet, color: "#3b82f6" },
-];
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/utils/categories";
 
 export default function EditTransactionPage() {
   const router = useRouter();

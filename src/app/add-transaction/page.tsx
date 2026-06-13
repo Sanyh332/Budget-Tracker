@@ -3,17 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { ArrowLeft, Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
-const CATEGORIES = [
-  { id: "utilities", label: "Utilities", icon: Zap, color: "#f59e0b" },
-  { id: "groceries", label: "Groceries", icon: ShoppingCart, color: "#10b981" },
-  { id: "subscriptions", label: "Subscriptions", icon: CreditCard, color: "#8b5cf6" },
-  { id: "fuel", label: "Fuel", icon: Droplet, color: "#ef4444" },
-  { id: "loans", label: "Loans", icon: Home, color: "#3b82f6" },
-  { id: "other", label: "Other", icon: Coffee, color: "#a1a1aa" },
-];
+import { EXPENSE_CATEGORIES as CATEGORIES } from "@/utils/categories";
 
 export default function AddTransactionPage() {
   const router = useRouter();

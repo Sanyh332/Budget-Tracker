@@ -3,31 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { Home, ShoppingCart, Zap, CreditCard, Droplet, Coffee, Briefcase, Gift, Wallet } from "lucide-react";
 import Link from "next/link";
-
-type Transaction = {
-  id: string;
-  amount: number;
-  category: string;
-  notes: string | null;
-  created_at: string;
-  type: "income" | "expense";
-};
-
-const getCategoryDetails = (category: string) => {
-  switch (category) {
-    case "utilities": return { icon: Zap, color: "#f59e0b", label: "Utilities" };
-    case "groceries": return { icon: ShoppingCart, color: "#10b981", label: "Groceries" };
-    case "subscriptions": return { icon: CreditCard, color: "#8b5cf6", label: "Subscriptions" };
-    case "fuel": return { icon: Droplet, color: "#ef4444", label: "Fuel" };
-    case "loans": return { icon: Home, color: "#3b82f6", label: "Loans" };
-    case "salary": return { icon: Briefcase, color: "#10b981", label: "Salary" };
-    case "gift": return { icon: Gift, color: "#f59e0b", label: "Gift" };
-    case "opening_balance": return { icon: Wallet, color: "#3b82f6", label: "Opening Balance" };
-    default: return { icon: Coffee, color: "#a1a1aa", label: "Other" };
-  }
-};
+import { getCategoryDetails } from "@/utils/categories";
+import { Transaction } from "@/utils/types";
 
 export default function TransactionsPage() {
   const router = useRouter();

@@ -3,14 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { ArrowLeft, Briefcase, Gift, Wallet } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
-const CATEGORIES = [
-  { id: "salary", label: "Salary", icon: Briefcase, color: "#10b981" },
-  { id: "gift", label: "Gift", icon: Gift, color: "#f59e0b" },
-  { id: "opening_balance", label: "Opening Balance", icon: Wallet, color: "#3b82f6" },
-];
+import { INCOME_CATEGORIES as CATEGORIES } from "@/utils/categories";
 
 export default function AddIncomePage() {
   const router = useRouter();

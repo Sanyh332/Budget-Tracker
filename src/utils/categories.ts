@@ -14,6 +14,7 @@ export const EXPENSE_CATEGORIES = [
   { id: "gaming", label: "Gaming/Ent.", icon: Gamepad2, color: "#6366f1" },
   { id: "school_fees", label: "School Fees", icon: GraduationCap, color: "#f43f5e" },
   { id: "family", label: "Family Exp.", icon: Users, color: "#d946ef" },
+  { id: "coffee", label: "Coffee", icon: Coffee, color: "#8B4513" },
   { id: "other", label: "Other", icon: Coffee, color: "#a1a1aa" },
 ];
 

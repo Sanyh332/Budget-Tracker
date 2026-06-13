@@ -64,8 +64,8 @@ export default function DashboardPage() {
           acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
           return acc;
         }, {} as Record<string, number>);
-        
-        setCategoryBreakdown(Object.entries(breakdown).sort((a, b) => b[1] - a[1]));
+        const entries = Object.entries(breakdown) as [string, number][];
+        setCategoryBreakdown(entries.sort((a, b) => b[1] - a[1]));
       }
       
       setLoading(false);

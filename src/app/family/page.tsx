@@ -10,6 +10,7 @@ export default function FamilyPage() {
   const [loading, setLoading] = useState(true);
   const [familyName, setFamilyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [members, setMembers] = useState<string[]>([]);
   
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
@@ -27,18 +28,25 @@ export default function FamilyPage() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select(`families(name, invite_code)`)
-      .eq("user_id", user.id)
-      .single();
+    const [famRes, membersRes] = await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select(`families(name, invite_code)`)
+        .eq("user_id", user.id)
+        .single(),
+      supabase.rpc("get_family_members")
+    ]);
 
-    if (data && data.families && !error) {
-      const fam = Array.isArray(data.families) ? data.families[0] : data.families;
+    if (famRes.data && famRes.data.families && !famRes.error) {
+      const fam = Array.isArray(famRes.data.families) ? famRes.data.families[0] : famRes.data.families;
       if (fam) {
         setFamilyName(fam.name);
         setInviteCode(fam.invite_code);
       }
+    }
+
+    if (membersRes.data && !membersRes.error) {
+      setMembers(membersRes.data.map((m: any) => m.email));
     }
     setLoading(false);
   };
@@ -91,6 +99,18 @@ export default function FamilyPage() {
         <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
           {familyName || "My Family"}
         </h2>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h4 style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Linked Accounts ({members.length})</h4>
+          <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {members.map((email, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm" style={{ padding: "0.5rem", background: "var(--bg-primary)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                <Users size={16} className="text-secondary" />
+                {email}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div style={{ background: "var(--bg-primary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
           <p className="text-sm" style={{ marginBottom: "0.5rem" }}>Your Invite Code</p>

@@ -232,7 +232,7 @@ export default function DashboardPage() {
 
       {/* Action Menu Items */}
       {showActionMenu && (
-        <div className="animate-slide-up" style={{ position: "fixed", bottom: "6rem", right: "2rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem", alignItems: "flex-end" }}>
+        <div className="animate-slide-up" style={{ position: "fixed", bottom: "9.5rem", right: "1.5rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem", alignItems: "flex-end" }}>
           <Link href="/add-income" className="flex items-center gap-3">
             <span style={{ backgroundColor: "var(--bg-elevated)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontWeight: 500, boxShadow: "var(--shadow-md)" }}>
               Add Income

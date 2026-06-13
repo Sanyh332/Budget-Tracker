@@ -176,17 +176,25 @@ export default function BudgetPage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex p-1 rounded-lg mb-6" style={{ background: "var(--bg-secondary)" }}>
+      <div className="flex p-1 mb-6" style={{ background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
         <button 
-          className={`flex-1 py-2 text-sm font-medium rounded-md ${viewMode === 'personal' ? 'bg-primary shadow-sm' : ''}`}
-          style={{ color: viewMode === "personal" ? "var(--accent-primary)" : "var(--text-secondary)" }}
+          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'personal' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+          style={{ 
+            background: viewMode === "personal" ? "var(--bg-primary)" : "transparent",
+            color: viewMode === "personal" ? "var(--text-primary)" : "var(--text-secondary)",
+            transform: viewMode === "personal" ? "scale(1)" : "scale(0.98)"
+          }}
           onClick={() => setViewMode('personal')}
         >
           My Budget
         </button>
         <button 
-          className={`flex-1 py-2 text-sm font-medium rounded-md ${viewMode === 'family' ? 'bg-primary shadow-sm' : ''}`}
-          style={{ color: viewMode === "family" ? "var(--accent-primary)" : "var(--text-secondary)" }}
+          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'family' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+          style={{ 
+            background: viewMode === "family" ? "var(--bg-primary)" : "transparent",
+            color: viewMode === "family" ? "var(--text-primary)" : "var(--text-secondary)",
+            transform: viewMode === "family" ? "scale(1)" : "scale(0.98)"
+          }}
           onClick={() => setViewMode('family')}
         >
           Family Budget

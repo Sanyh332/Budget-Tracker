@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SpendTracker | Money Management",
   description: "A fast, premium money management app for tracking expenses on the go.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SpendTracker",
+  },
 };
 
 export default function RootLayout({

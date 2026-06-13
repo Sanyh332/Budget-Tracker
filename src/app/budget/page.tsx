@@ -15,6 +15,13 @@ export default function BudgetPage() {
   // Budgets map: { categoryId: amount }
   const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [expectedIncome, setExpectedIncome] = useState<number>(0);
+  const [currentBalance, setCurrentBalance] = useState<number>(0);
+
+  const [targetDate, setTargetDate] = useState(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     const fetchBudgets = async () => {
@@ -24,13 +31,16 @@ export default function BudgetPage() {
         return;
       }
 
-      const { data, error } = await supabase.from("budgets").select("*");
+      const [budgetsRes, txRes] = await Promise.all([
+        supabase.from("budgets").select("*"),
+        supabase.from("transactions").select("*")
+      ]);
 
-      if (data && !error) {
+      if (budgetsRes.data && !budgetsRes.error) {
         const budgetMap: Record<string, number> = {};
         let income = 0;
         
-        data.forEach((b) => {
+        budgetsRes.data.forEach((b) => {
           if (b.category === "expected_income") {
             income = Number(b.amount);
           } else {
@@ -41,6 +51,14 @@ export default function BudgetPage() {
         setBudgets(budgetMap);
         setExpectedIncome(income);
       }
+
+      if (txRes.data && !txRes.error) {
+        const balance = txRes.data.reduce((acc, curr) => {
+          return (curr.type || "expense") === "income" ? acc + Number(curr.amount) : acc - Number(curr.amount);
+        }, 0);
+        setCurrentBalance(balance);
+      }
+
       setLoading(false);
     };
 
@@ -113,6 +131,16 @@ export default function BudgetPage() {
 
   const totalBudgeted = Object.values(budgets).reduce((a, b) => a + b, 0);
   const plannedSavings = expectedIncome - totalBudgeted;
+
+  const monthsDiff = () => {
+    if (!targetDate) return 0;
+    const now = new Date();
+    const [year, month] = targetDate.split('-').map(Number);
+    const months = (year - now.getFullYear()) * 12 + (month - (now.getMonth() + 1));
+    return Math.max(0, months);
+  }();
+
+  const projectedTotal = currentBalance + (plannedSavings * monthsDiff);
 
   return (
     <div className="container animate-slide-up" style={{ paddingBottom: "100px" }}>
@@ -199,6 +227,42 @@ export default function BudgetPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Motivational Projection Card */}
+      <div className="card" style={{ marginTop: "2rem", background: "linear-gradient(135deg, var(--accent-primary), #8b5cf6)", color: "white", border: "none" }}>
+        <h3 style={{ fontWeight: 600, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          🚀 Savings Projection
+        </h3>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <span style={{ opacity: 0.9 }}>Project until:</span>
+          <input 
+            type="month" 
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+            style={{
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "var(--radius-md)",
+              color: "white",
+              padding: "0.5rem",
+              outline: "none"
+            }}
+          />
+        </div>
+
+        <div style={{ textAlign: "center", padding: "1rem 0" }}>
+          <p style={{ opacity: 0.9, fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+            If you stick to this budget, in <strong>{monthsDiff} month{monthsDiff !== 1 && 's'}</strong> your total balance will be:
+          </p>
+          <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0" }}>
+            MVR {projectedTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </h2>
+          <p style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: "0.5rem" }}>
+            (Current Balance + {monthsDiff} × MVR {plannedSavings.toFixed(0)})
+          </p>
+        </div>
       </div>
 
       <button 

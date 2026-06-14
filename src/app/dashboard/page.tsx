@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [username, setUsername] = useState("");
   
   // Balances
   const [currentBalance, setCurrentBalance] = useState(0);
@@ -31,6 +32,12 @@ export default function DashboardPage() {
       if (!session) {
         router.push("/login");
         return;
+      }
+
+      if (session.user?.email) {
+        const namePart = session.user.email.split("@")[0];
+        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        setUsername(formattedName);
       }
 
       const [txRes, bgRes] = await Promise.all([
@@ -98,7 +105,7 @@ export default function DashboardPage() {
       <header className="flex justify-between items-center" style={{ marginBottom: "2rem" }}>
         <div>
           <h1 className="text-h2">Dashboard</h1>
-          <p className="text-sm">Welcome back!</p>
+          <p className="text-sm">Welcome back{username ? `, ${username}` : ""}!</p>
         </div>
         <button 
           className="btn-icon" 

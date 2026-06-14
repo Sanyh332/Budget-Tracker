@@ -24,19 +24,14 @@ export default function DashboardPage() {
   
   // UI State
   const [showActionMenu, setShowActionMenu] = useState(false);
-  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         router.push("/login");
         return;
       }
-
-      const emailName = user.email?.split("@")[0] || "User";
-      const displayName = user.user_metadata?.full_name || emailName.charAt(0).toUpperCase() + emailName.slice(1);
-      setUserName(displayName);
 
       const [txRes, bgRes] = await Promise.all([
         supabase.from("transactions").select("*").order("created_at", { ascending: false }),
@@ -45,9 +40,7 @@ export default function DashboardPage() {
 
       if (bgRes.data && !bgRes.error) {
         const bMap: Record<string, number> = {};
-        bgRes.data.forEach((b: any) => {
-          bMap[b.category] = (bMap[b.category] || 0) + Number(b.amount);
-        });
+        bgRes.data.forEach((b: any) => bMap[b.category] = Number(b.amount));
         setBudgets(bMap);
       }
 
@@ -100,12 +93,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container animate-slide-up" style={{ position: "relative", paddingBottom: "100px" }}>
+    <div className="container animate-slide-up" style={{ position: "relative", paddingBottom: "80px" }}>
       {/* Header */}
       <header className="flex justify-between items-center" style={{ marginBottom: "2rem" }}>
         <div>
-          <h1 className="text-h1">Dashboard</h1>
-          <p className="text-sm">Welcome back, {userName} 👋</p>
+          <h1 className="text-h2">Dashboard</h1>
+          <p className="text-sm">Welcome back!</p>
         </div>
         <button 
           className="btn-icon" 

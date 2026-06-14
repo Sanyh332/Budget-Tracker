@@ -17,10 +17,6 @@ export default function BudgetPage() {
   const [expectedIncome, setExpectedIncome] = useState<number>(0);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
 
-  const [viewMode, setViewMode] = useState<"personal" | "family">("personal");
-  const [familyBudgets, setFamilyBudgets] = useState<Record<string, number>>({});
-  const [familyExpectedIncome, setFamilyExpectedIncome] = useState<number>(0);
-
   const [targetDate, setTargetDate] = useState(() => {
     const d = new Date();
     d.setFullYear(d.getFullYear() + 1);
@@ -35,41 +31,25 @@ export default function BudgetPage() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const [myBudgetsRes, familyBudgetsRes, txRes] = await Promise.all([
-        supabase.from("budgets").select("*").eq("user_id", user.id),
+      const [budgetsRes, txRes] = await Promise.all([
         supabase.from("budgets").select("*"),
         supabase.from("transactions").select("*")
       ]);
 
-      if (myBudgetsRes.data && !myBudgetsRes.error) {
+      if (budgetsRes.data && !budgetsRes.error) {
         const budgetMap: Record<string, number> = {};
         let income = 0;
-        myBudgetsRes.data.forEach((b) => {
+        
+        budgetsRes.data.forEach((b) => {
           if (b.category === "expected_income") {
             income = Number(b.amount);
           } else {
             budgetMap[b.category] = Number(b.amount);
           }
         });
+
         setBudgets(budgetMap);
         setExpectedIncome(income);
-      }
-
-      if (familyBudgetsRes.data && !familyBudgetsRes.error) {
-        const fBudgetMap: Record<string, number> = {};
-        let fIncome = 0;
-        familyBudgetsRes.data.forEach((b) => {
-          if (b.category === "expected_income") {
-            fIncome += Number(b.amount);
-          } else {
-            fBudgetMap[b.category] = (fBudgetMap[b.category] || 0) + Number(b.amount);
-          }
-        });
-        setFamilyBudgets(fBudgetMap);
-        setFamilyExpectedIncome(fIncome);
       }
 
       if (txRes.data && !txRes.error) {
@@ -149,14 +129,8 @@ export default function BudgetPage() {
     return <div className="container items-center justify-center"><p className="text-secondary">Loading...</p></div>;
   }
 
-  const myTotalBudgeted = Object.values(budgets).reduce((a, b) => a + b, 0);
-  const myPlannedSavings = expectedIncome - myTotalBudgeted;
-
-  const familyTotalBudgeted = Object.values(familyBudgets).reduce((a, b) => a + b, 0);
-  const familyPlannedSavings = familyExpectedIncome - familyTotalBudgeted;
-
-  const displayTotalBudgeted = viewMode === "personal" ? myTotalBudgeted : familyTotalBudgeted;
-  const displayPlannedSavings = viewMode === "personal" ? myPlannedSavings : familyPlannedSavings;
+  const totalBudgeted = Object.values(budgets).reduce((a, b) => a + b, 0);
+  const plannedSavings = expectedIncome - totalBudgeted;
 
   const monthsDiff = (() => {
     if (!targetDate) return 0;
@@ -166,7 +140,7 @@ export default function BudgetPage() {
     return Math.max(0, months);
   })();
 
-  const projectedTotal = currentBalance + (displayPlannedSavings * monthsDiff);
+  const projectedTotal = currentBalance + (plannedSavings * monthsDiff);
 
   return (
     <div className="container animate-slide-up" style={{ paddingBottom: "100px" }}>
@@ -175,70 +149,40 @@ export default function BudgetPage() {
         <p className="text-sm">Set your monthly category limits.</p>
       </header>
 
-      {/* Tabs */}
-      <div className="flex p-1 mb-6" style={{ background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
-        <button 
-          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'personal' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}`}
-          style={{ 
-            background: viewMode === "personal" ? "var(--bg-primary)" : "transparent",
-            color: viewMode === "personal" ? "var(--text-primary)" : "var(--text-secondary)",
-            transform: viewMode === "personal" ? "scale(1)" : "scale(0.98)"
-          }}
-          onClick={() => setViewMode('personal')}
-        >
-          My Budget
-        </button>
-        <button 
-          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${viewMode === 'family' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}`}
-          style={{ 
-            background: viewMode === "family" ? "var(--bg-primary)" : "transparent",
-            color: viewMode === "family" ? "var(--text-primary)" : "var(--text-secondary)",
-            transform: viewMode === "family" ? "scale(1)" : "scale(0.98)"
-          }}
-          onClick={() => setViewMode('family')}
-        >
-          Family Budget
-        </button>
-      </div>
-
       {/* Summary Card */}
       <div className="card" style={{ marginBottom: "2rem", background: "linear-gradient(135deg, var(--bg-elevated), var(--bg-secondary))" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
           <span className="text-secondary">Expected Income</span>
           <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
             <span className="text-sm">MVR</span>
-            {viewMode === "personal" ? (
-              <input 
-                type="number" 
-                value={expectedIncome || ""}
-                onChange={(e) => setExpectedIncome(Number(e.target.value) || 0)}
-                placeholder="0"
-                style={{
-                  background: "var(--bg-primary)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--success)",
-                  padding: "0.25rem 0.5rem",
-                  width: "100px",
-                  textAlign: "right",
-                  fontWeight: 600
-                }}
-              />
-            ) : (
-              <span style={{ fontWeight: 600, color: "var(--success)" }}>{familyExpectedIncome.toFixed(2)}</span>
-            )}
+            <input 
+              type="number" 
+              value={expectedIncome || ""}
+              onChange={(e) => setExpectedIncome(Number(e.target.value) || 0)}
+              placeholder="0"
+              style={{
+                background: "var(--bg-primary)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--success)",
+                padding: "0.25rem 0.5rem",
+                width: "100px",
+                textAlign: "right",
+                fontWeight: 600
+              }}
+            />
           </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", paddingBottom: "1rem", borderBottom: "1px solid var(--border)" }}>
           <span className="text-secondary">Total Budgeted</span>
-          <span style={{ fontWeight: 600 }}>MVR {displayTotalBudgeted.toFixed(2)}</span>
+          <span style={{ fontWeight: 600 }}>MVR {totalBudgeted.toFixed(2)}</span>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontWeight: 600 }}>Planned Savings</span>
-          <span style={{ fontWeight: 700, color: displayPlannedSavings >= 0 ? "var(--success)" : "var(--danger)" }}>
-            MVR {displayPlannedSavings.toFixed(2)}
+          <span style={{ fontWeight: 700, color: plannedSavings >= 0 ? "var(--success)" : "var(--danger)" }}>
+            MVR {plannedSavings.toFixed(2)}
           </span>
         </div>
       </div>
@@ -251,7 +195,7 @@ export default function BudgetPage() {
         
         {EXPENSE_CATEGORIES.map((cat) => {
           const Icon = cat.icon;
-          const currentVal = viewMode === "personal" ? budgets[cat.id] || "" : familyBudgets[cat.id] || 0;
+          const currentVal = budgets[cat.id] || "";
           
           return (
             <div key={cat.id} className="card flex justify-between items-center" style={{ padding: "1rem" }}>
@@ -264,25 +208,21 @@ export default function BudgetPage() {
               
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span className="text-sm text-secondary">MVR</span>
-                {viewMode === "personal" ? (
-                  <input 
-                    type="number" 
-                    placeholder="0"
-                    value={currentVal}
-                    onChange={(e) => handleBudgetChange(cat.id, e.target.value)}
-                    style={{
-                      background: "var(--bg-primary)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-sm)",
-                      color: "var(--text-primary)",
-                      padding: "0.5rem",
-                      width: "80px",
-                      textAlign: "right"
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontWeight: 600, paddingRight: "0.5rem" }}>{Number(currentVal).toFixed(2)}</span>
-                )}
+                <input 
+                  type="number" 
+                  placeholder="0"
+                  value={currentVal}
+                  onChange={(e) => handleBudgetChange(cat.id, e.target.value)}
+                  style={{
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm)",
+                    color: "var(--text-primary)",
+                    padding: "0.5rem",
+                    width: "80px",
+                    textAlign: "right"
+                  }}
+                />
               </div>
             </div>
           );
@@ -320,21 +260,19 @@ export default function BudgetPage() {
             MVR {projectedTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
           <p style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: "0.5rem" }}>
-            (Current Balance + {monthsDiff} × MVR {displayPlannedSavings.toFixed(0)})
+            (Current Balance + {monthsDiff} × MVR {plannedSavings.toFixed(0)})
           </p>
         </div>
       </div>
 
-      {viewMode === "personal" && (
-        <button 
-          className="btn btn-primary" 
-          style={{ width: "100%", marginTop: "2rem", padding: "1rem", fontSize: "1.125rem", border: "none" }}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "Save Budgets"}
-        </button>
-      )}
+      <button 
+        className="btn btn-primary" 
+        style={{ width: "100%", marginTop: "2rem", padding: "1rem", fontSize: "1.125rem", border: "none" }}
+        onClick={handleSave}
+        disabled={saving}
+      >
+        {saving ? "Saving..." : "Save Budgets"}
+      </button>
     </div>
   );
 }

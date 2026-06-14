@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/utils/categories";
 
 export default function EditTransactionPage() {
@@ -103,39 +102,48 @@ export default function EditTransactionPage() {
   };
 
   if (loading) {
-    return <div className="container items-center justify-center"><p className="text-secondary">Loading...</p></div>;
+    return (
+      <div className="container items-center justify-center">
+        <div className="loading-pulse">
+          <p className="text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const themeColor = type === "income" ? "var(--success)" : "var(--text-primary)";
 
   return (
-    <div className="container animate-slide-up">
-      <header className="flex items-center justify-between" style={{ marginBottom: "2rem" }}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="btn-icon" style={{ border: "none" }}>
-            <ArrowLeft size={24} />
+    <div className="container animate-slide-up" style={{ paddingBottom: "2rem" }}>
+      <header className="flex items-center justify-between" style={{ marginBottom: "2rem", paddingTop: "0.5rem" }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="btn-icon">
+            <ArrowLeft size={22} />
           </button>
           <h1 className="text-h2">Edit {type === "income" ? "Income" : "Expense"}</h1>
         </div>
         <button 
           onClick={handleDelete} 
-          className="btn-icon text-danger" 
-          style={{ border: "none" }}
+          className="btn-icon"
+          style={{ color: "var(--danger)" }}
           disabled={deleting}
         >
-          <Trash2 size={24} />
+          <Trash2 size={22} />
         </button>
       </header>
 
-      {error && <div className="text-danger text-sm mb-4">{error}</div>}
+      {error && (
+        <div style={{ background: "var(--danger-glow)", padding: "0.75rem", borderRadius: "var(--radius-md)", marginBottom: "1rem" }}>
+          <p className="text-danger" style={{ fontSize: "0.8125rem" }}>{error}</p>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-6" style={{ paddingBottom: "100px" }}>
+      <div className="flex flex-col gap-6">
         {/* Amount Input */}
-        <div className="card" style={{ padding: "2rem 1rem", textAlign: "center" }}>
-          <p className="text-sm" style={{ marginBottom: "0.5rem" }}>Amount</p>
-          <div className="flex items-center justify-center gap-2 text-h1" style={{ fontSize: "3rem" }}>
-            <span style={{ color: "var(--text-secondary)", fontSize: "1.5rem" }}>MVR</span>
+        <div className="card-static text-center" style={{ padding: "2.5rem 1rem" }}>
+          <p className="text-sm" style={{ marginBottom: "0.75rem" }}>Amount</p>
+          <div className="flex items-center justify-center gap-2" style={{ fontSize: "2.75rem", fontWeight: 800, letterSpacing: "-0.03em" }}>
+            <span style={{ color: "var(--text-tertiary)", fontSize: "1.25rem", fontWeight: 500 }}>MVR</span>
             <input
               type="number"
               value={amount}
@@ -147,10 +155,11 @@ export default function EditTransactionPage() {
                 background: "transparent",
                 border: "none",
                 outline: "none",
-                color: themeColor,
+                color: type === "income" ? "var(--success)" : "var(--text-primary)",
                 fontSize: "inherit",
                 fontWeight: "inherit",
-                width: amount.length > 0 ? `${amount.length + 1}ch` : "4ch",
+                fontFamily: "inherit",
+                width: amount.length > 0 ? `${Math.max(amount.length + 1, 3)}ch` : "4ch",
                 maxWidth: "100%",
                 textAlign: "center"
               }}
@@ -160,8 +169,8 @@ export default function EditTransactionPage() {
 
         {/* Category Selection */}
         <div>
-          <p className="text-sm" style={{ marginBottom: "1rem", fontWeight: 500 }}>Category</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+          <p className="section-header" style={{ marginBottom: "0.75rem" }}>Category</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.625rem" }}>
             {categories.map((cat) => {
               const Icon = cat.icon;
               const isSelected = category === cat.id;
@@ -169,22 +178,15 @@ export default function EditTransactionPage() {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
+                  className={`category-chip ${isSelected ? "active" : ""}`}
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "1rem 0.5rem",
-                    borderRadius: "var(--radius-lg)",
-                    border: `1px solid ${isSelected ? cat.color : "var(--border)"}`,
-                    background: isSelected ? `${cat.color}15` : "var(--bg-secondary)",
-                    color: isSelected ? cat.color : "var(--text-secondary)",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
+                    borderColor: isSelected ? cat.color : undefined,
+                    background: isSelected ? `${cat.color}12` : undefined,
+                    color: isSelected ? cat.color : undefined,
                   }}
                 >
-                  <Icon size={24} />
-                  <span style={{ fontSize: "0.75rem", fontWeight: isSelected ? 600 : 400, textAlign: "center" }}>{cat.label}</span>
+                  <Icon size={22} />
+                  <span style={{ fontWeight: isSelected ? 600 : undefined }}>{cat.label}</span>
                 </button>
               );
             })}
@@ -193,7 +195,7 @@ export default function EditTransactionPage() {
 
         {/* Notes */}
         <div>
-          <p className="text-sm" style={{ marginBottom: "0.5rem", fontWeight: 500 }}>Notes (Optional)</p>
+          <p className="section-header" style={{ marginBottom: "0.5rem" }}>Notes (optional)</p>
           <input
             type="text"
             className="input-field"
@@ -205,8 +207,8 @@ export default function EditTransactionPage() {
 
         {/* Submit */}
         <button 
-          className="btn btn-primary" 
-          style={{ padding: "1rem", fontSize: "1.125rem", marginTop: "1rem", backgroundColor: type === "income" ? "var(--success)" : "var(--accent-primary)", border: "none" }}
+          className={`btn w-full ${type === "income" ? "btn-success" : "btn-primary"}`}
+          style={{ padding: "1rem", fontSize: "1rem" }}
           onClick={handleSave}
           disabled={saving || deleting}
         >

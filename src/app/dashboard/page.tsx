@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { Plus, LogOut, ArrowUpRight, ArrowDownRight, X } from "lucide-react";
+import { Plus, LogOut, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
 import { getCategoryDetails } from "@/utils/categories";
 import { Transaction } from "@/utils/types";
@@ -22,9 +22,6 @@ export default function DashboardPage() {
   // Breakdown & Budgets
   const [categoryBreakdown, setCategoryBreakdown] = useState<[string, number][]>([]);
   const [budgets, setBudgets] = useState<Record<string, number>>({});
-  
-  // UI State
-  const [showActionMenu, setShowActionMenu] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,9 +37,20 @@ export default function DashboardPage() {
         setUsername(formattedName);
       }
 
-      const [txRes, bgRes] = await Promise.all([
-        supabase.from("transactions").select("*").order("created_at", { ascending: false }),
-        supabase.from("budgets").select("*")
+      // Build date range for this month (server-side filter)
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+      const [balanceRes, monthTxRes, recentTxRes, bgRes] = await Promise.all([
+        // 1. Calculate total balance on the server (no data transfer)
+        supabase.rpc("get_balance"),
+        // 2. Only fetch THIS MONTH's transactions for breakdown
+        supabase.from("transactions").select("amount,category,type").gte("created_at", monthStart).lte("created_at", monthEnd),
+        // 3. Only fetch the 8 most recent transactions for the list
+        supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(8),
+        // 4. Budgets (already small)
+        supabase.from("budgets").select("category,amount")
       ]);
 
       if (bgRes.data && !bgRes.error) {
@@ -51,30 +59,23 @@ export default function DashboardPage() {
         setBudgets(bMap);
       }
 
-      if (txRes.data && !txRes.error) {
-        const data = txRes.data;
-        setTransactions(data);
-        
-        // Calculate Total Balance (all time)
-        const balance = data.reduce((acc, curr) => {
-          // If type is missing, treat as expense for backward compatibility
-          const type = curr.type || "expense";
-          return type === "income" ? acc + Number(curr.amount) : acc - Number(curr.amount);
-        }, 0);
-        setCurrentBalance(balance);
+      // Balance from server function
+      if (balanceRes.data !== null && !balanceRes.error) {
+        setCurrentBalance(Number(balanceRes.data));
+      }
 
-        // Calculate this month's stats
-        const now = new Date();
-        const thisMonth = data.filter(t => {
-          const d = new Date(t.created_at);
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
-        
+      // Recent transactions for the list
+      if (recentTxRes.data && !recentTxRes.error) {
+        setTransactions(recentTxRes.data);
+      }
+
+      // This month's breakdown (only month data, not all-time)
+      if (monthTxRes.data && !monthTxRes.error) {
         let incMonth = 0;
         let expMonth = 0;
         const breakdown: Record<string, number> = {};
 
-        thisMonth.forEach(t => {
+        monthTxRes.data.forEach((t: any) => {
           const type = t.type || "expense";
           if (type === "income") {
             incMonth += Number(t.amount);
@@ -96,17 +97,22 @@ export default function DashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <div className="container items-center justify-center"><p className="text-secondary">Loading...</p></div>;
+    return (
+      <div className="container items-center justify-center">
+        <div className="loading-pulse">
+          <p className="text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container" style={{ position: "relative", paddingBottom: "80px" }}>
-      <div className="animate-slide-up" style={{ width: "100%" }}>
-        {/* Header */}
-        <header className="flex justify-between items-center" style={{ marginBottom: "2rem" }}>
+    <div className="container" style={{ paddingBottom: "6rem" }}>
+      {/* Header */}
+      <header className="flex justify-between items-center animate-slide-up" style={{ marginBottom: "1.5rem", paddingTop: "0.5rem" }}>
         <div>
-          <h1 className="text-h2">Dashboard</h1>
-          <p className="text-sm">Welcome back{username ? `, ${username}` : ""}!</p>
+          <p className="text-sm" style={{ marginBottom: "0.125rem" }}>Welcome back,</p>
+          <h1 className="text-h2">{username || "User"} 👋</h1>
         </div>
         <button 
           className="btn-icon" 
@@ -119,34 +125,39 @@ export default function DashboardPage() {
         </button>
       </header>
 
-      {/* Main Balance Card */}
-      <div className="card" style={{ marginBottom: "2rem", background: "linear-gradient(135deg, var(--bg-elevated), var(--bg-secondary))", border: "1px solid var(--border)" }}>
-        <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>Current Balance</p>
-        <h2 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
+      {/* Balance Card */}
+      <div className="card-static animate-slide-up stagger-1" style={{ marginBottom: "1.5rem" }}>
+        <p className="text-sm" style={{ marginBottom: "0.25rem" }}>Current Balance</p>
+        <h2 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0.25rem 0 1.25rem", letterSpacing: "-0.03em", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
           MVR {currentBalance.toFixed(2)}
         </h2>
         
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid var(--border)" }}>
-          <div>
-            <div className="flex items-center gap-1 text-sm mb-1 text-success">
-              <ArrowUpRight size={16} /> Income
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ background: "var(--success-glow)", borderRadius: "var(--radius-md)", padding: "0.75rem" }}>
+            <div className="flex items-center gap-1" style={{ marginBottom: "0.25rem" }}>
+              <ArrowUpRight size={14} color="var(--success)" /> 
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Income</span>
+              <Link href="/add-income" style={{ marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "var(--success)", color: "white", textDecoration: "none" }}>
+                <Plus size={11} />
+              </Link>
             </div>
-            <p style={{ fontWeight: 600 }}>MVR {incomeThisMonth.toFixed(2)}</p>
+            <p style={{ fontWeight: 700, fontSize: "1.0625rem" }}>MVR {incomeThisMonth.toFixed(2)}</p>
           </div>
-          <div>
-            <div className="flex items-center gap-1 text-sm mb-1 text-danger">
-              <ArrowDownRight size={16} /> Spent
+          <div style={{ background: "var(--danger-glow)", borderRadius: "var(--radius-md)", padding: "0.75rem" }}>
+            <div className="flex items-center gap-1" style={{ marginBottom: "0.25rem" }}>
+              <ArrowDownRight size={14} color="var(--danger)" />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Spent</span>
             </div>
-            <p style={{ fontWeight: 600 }}>MVR {spentThisMonth.toFixed(2)}</p>
+            <p style={{ fontWeight: 700, fontSize: "1.0625rem" }}>MVR {spentThisMonth.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      {/* Expense Category Breakdown (Only show if there are expenses this month) */}
+      {/* Expense Category Breakdown */}
       {categoryBreakdown.length > 0 && (
-        <div className="flex flex-col gap-3" style={{ marginBottom: "2rem" }}>
-          <h3 style={{ fontWeight: 600 }}>Spending this Month</h3>
-          <div className="card flex flex-col gap-4">
+        <div className="animate-slide-up stagger-2" style={{ marginBottom: "1.5rem" }}>
+          <h3 className="section-header" style={{ marginBottom: "0.75rem" }}>Spending this Month</h3>
+          <div className="card-static flex flex-col gap-4">
             {categoryBreakdown.map(([catId, amount]) => {
               const cat = getCategoryDetails(catId);
               const Icon = cat.icon;
@@ -165,20 +176,22 @@ export default function DashboardPage() {
               
               return (
                 <div key={catId} className="flex flex-col gap-2">
-                  <div className="flex justify-between items-end text-sm">
+                  <div className="flex justify-between items-end">
                     <div className="flex items-center gap-2">
-                      <Icon size={16} color={cat.color} />
-                      <span style={{ fontWeight: 500 }}>{cat.label}</span>
+                      <div style={{ padding: "0.375rem", borderRadius: "var(--radius-sm)", background: `${cat.color}12`, color: cat.color }}>
+                        <Icon size={14} />
+                      </div>
+                      <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>{cat.label}</span>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <span style={{ fontWeight: 600, color: isOverBudget ? "var(--danger)" : "inherit" }}>
+                    <div className="text-right">
+                      <span style={{ fontWeight: 600, fontSize: "0.875rem", color: isOverBudget ? "var(--danger)" : "inherit" }}>
                         MVR {amount.toFixed(2)}
                       </span>
-                      {hasBudget && <span className="text-secondary" style={{ fontSize: "0.75rem" }}> / {budgetLimit.toFixed(0)}</span>}
+                      {hasBudget && <span className="text-xs" style={{ marginLeft: "0.25rem" }}>/ {budgetLimit.toFixed(0)}</span>}
                     </div>
                   </div>
-                  <div style={{ width: "100%", height: "8px", backgroundColor: "var(--border)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
-                    <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: barColor, borderRadius: "var(--radius-full)", transition: "width 0.5s ease" }}></div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${percentage}%`, backgroundColor: barColor }} />
                   </div>
                 </div>
               );
@@ -188,40 +201,40 @@ export default function DashboardPage() {
       )}
 
       {/* Recent Transactions */}
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h3 style={{ fontWeight: 600 }}>Recent Transactions</h3>
-          <button style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.875rem" }}>View All</button>
+      <div className="animate-slide-up stagger-3">
+        <div className="flex justify-between items-center" style={{ marginBottom: "0.75rem" }}>
+          <h3 className="section-header">Recent Transactions</h3>
+          <Link href="/transactions" style={{ fontSize: "0.75rem", color: "var(--accent-primary)", fontWeight: 600 }}>View All</Link>
         </div>
         
         {transactions.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
-            <p>No transactions yet.</p>
-            <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>Tap the + button to add one.</p>
+          <div className="card-static text-center" style={{ padding: "3rem 1rem" }}>
+            <p className="text-secondary" style={{ marginBottom: "0.25rem" }}>No transactions yet.</p>
+            <p className="text-xs">Tap the + button to add one.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {transactions.slice(0, 10).map((t) => {
+          <div className="flex flex-col gap-2">
+            {transactions.slice(0, 8).map((t) => {
               const cat = getCategoryDetails(t.category);
               const Icon = cat.icon;
               const isIncome = (t.type || "expense") === "income";
               
               return (
-                <div key={t.id} className="card flex items-center justify-between" style={{ padding: "1rem" }}>
+                <div key={t.id} className="card-static flex items-center justify-between" style={{ padding: "0.875rem" }}>
                   <div className="flex items-center gap-3">
-                    <div style={{ padding: "0.5rem", borderRadius: "var(--radius-full)", background: `${cat.color}15`, color: cat.color }}>
-                      <Icon size={20} />
+                    <div style={{ padding: "0.5rem", borderRadius: "var(--radius-md)", background: `${cat.color}12`, color: cat.color }}>
+                      <Icon size={18} />
                     </div>
                     <div>
-                      <p style={{ fontWeight: 500, fontSize: "0.95rem" }}>{cat.label}</p>
-                      {t.notes && <p className="text-sm" style={{ fontSize: "0.8rem", marginTop: "0.1rem" }}>{t.notes}</p>}
+                      <p style={{ fontWeight: 500, fontSize: "0.875rem", lineHeight: 1.3 }}>{cat.label}</p>
+                      {t.notes && <p className="text-xs" style={{ marginTop: "0.125rem" }}>{t.notes}</p>}
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontWeight: 600, color: isIncome ? "var(--success)" : "var(--text-primary)" }}>
+                  <div className="text-right">
+                    <p style={{ fontWeight: 600, fontSize: "0.875rem", color: isIncome ? "var(--success)" : "var(--text-primary)" }}>
                       {isIncome ? "+" : "-"}MVR {Number(t.amount).toFixed(2)}
                     </p>
-                    <p className="text-sm" style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
+                    <p className="text-xs" style={{ marginTop: "0.125rem" }}>
                       {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
@@ -231,46 +244,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-      </div>
-
-      {/* Action Menu Backdrop */}
-      {showActionMenu && (
-        <div 
-          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 40 }}
-          onClick={() => setShowActionMenu(false)}
-        />
-      )}
-
-      {/* Action Menu Items */}
-      {showActionMenu && (
-        <div className="animate-slide-up" style={{ position: "fixed", bottom: "9.5rem", right: "1.5rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem", alignItems: "flex-end" }}>
-          <Link href="/add-income" className="flex items-center gap-3">
-            <span style={{ backgroundColor: "var(--bg-elevated)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontWeight: 500, boxShadow: "var(--shadow-md)" }}>
-              Add Income
-            </span>
-            <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", backgroundColor: "var(--success)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", boxShadow: "var(--shadow-md)" }}>
-              <ArrowUpRight size={20} />
-            </div>
-          </Link>
-          <Link href="/add-transaction" className="flex items-center gap-3">
-            <span style={{ backgroundColor: "var(--bg-elevated)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontWeight: 500, boxShadow: "var(--shadow-md)" }}>
-              Add Expense
-            </span>
-            <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", backgroundColor: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", boxShadow: "var(--shadow-md)" }}>
-              <ArrowDownRight size={20} />
-            </div>
-          </Link>
-        </div>
-      )}
 
       {/* FAB */}
-      <button 
-        className="fab" 
-        onClick={() => setShowActionMenu(!showActionMenu)}
-        style={{ transform: showActionMenu ? "rotate(45deg)" : "none", transition: "transform 0.2s ease" }}
-      >
+      <Link href="/add-transaction" className="fab" style={{ display: "flex", textDecoration: "none" }}>
         <Plus size={24} />
-      </button>
+      </Link>
     </div>
   );
 }

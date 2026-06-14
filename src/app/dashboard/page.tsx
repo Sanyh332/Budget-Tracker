@@ -100,9 +100,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container animate-slide-up" style={{ position: "relative", paddingBottom: "80px" }}>
-      {/* Header */}
-      <header className="flex justify-between items-center" style={{ marginBottom: "2rem" }}>
+    <div className="container" style={{ position: "relative", paddingBottom: "80px" }}>
+      <div className="animate-slide-up" style={{ width: "100%" }}>
+        {/* Header */}
+        <header className="flex justify-between items-center" style={{ marginBottom: "2rem" }}>
         <div>
           <h1 className="text-h2">Dashboard</h1>
           <p className="text-sm">Welcome back{username ? `, ${username}` : ""}!</p>
@@ -229,6 +230,7 @@ export default function DashboardPage() {
             })}
           </div>
         )}
+      </div>
       </div>
 
       {/* Action Menu Backdrop */}

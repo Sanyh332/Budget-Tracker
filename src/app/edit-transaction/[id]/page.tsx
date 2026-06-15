@@ -114,7 +114,7 @@ export default function EditTransactionPage() {
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
-    <div className="container animate-slide-up" style={{ paddingBottom: "2rem" }}>
+    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
       <header className="flex items-center justify-between" style={{ marginBottom: "2rem", paddingTop: "0.5rem" }}>
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="btn-icon">

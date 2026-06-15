@@ -48,7 +48,7 @@ export default function AddIncomePage() {
   };
 
   return (
-    <div className="container animate-slide-up" style={{ paddingBottom: "2rem" }}>
+    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
       <header className="flex items-center gap-3" style={{ marginBottom: "2rem", paddingTop: "0.5rem" }}>
         <Link href="/dashboard" className="btn-icon">
           <ArrowLeft size={22} />

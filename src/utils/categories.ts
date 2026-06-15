@@ -1,6 +1,7 @@
 import { 
   Zap, ShoppingCart, CreditCard, Droplet, Home, Coffee, 
-  Briefcase, Gift, Wallet, Utensils, Wrench, Gamepad2, GraduationCap, Users 
+  Briefcase, Gift, Wallet, Utensils, Wrench, Gamepad2, GraduationCap, Users,
+  Hammer, Car, Scissors, Wifi, Smartphone
 } from "lucide-react";
 
 export const EXPENSE_CATEGORIES = [
@@ -11,6 +12,11 @@ export const EXPENSE_CATEGORIES = [
   { id: "loans", label: "Loans", icon: Home, color: "#3b82f6" },
   { id: "eating_out", label: "Eating Out", icon: Utensils, color: "#ec4899" },
   { id: "home_upgrades", label: "Home Upgrades", icon: Wrench, color: "#06b6d4" },
+  { id: "house_maintenance", label: "House Maint.", icon: Hammer, color: "#d97706" },
+  { id: "vehicle_maintenance", label: "Vehicle Maint.", icon: Car, color: "#4f46e5" },
+  { id: "salon", label: "Salon", icon: Scissors, color: "#db2777" },
+  { id: "internet", label: "Internet", icon: Wifi, color: "#0284c7" },
+  { id: "mobile", label: "Mobile", icon: Smartphone, color: "#16a34a" },
   { id: "gaming", label: "Gaming/Ent.", icon: Gamepad2, color: "#6366f1" },
   { id: "school_fees", label: "School Fees", icon: GraduationCap, color: "#f43f5e" },
   { id: "family", label: "Family Exp.", icon: Users, color: "#d946ef" },

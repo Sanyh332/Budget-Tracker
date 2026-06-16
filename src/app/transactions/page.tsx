@@ -6,6 +6,7 @@ import { supabase } from "@/utils/supabase/client";
 import Link from "next/link";
 import { getCategoryDetails } from "@/utils/categories";
 import { Transaction } from "@/utils/types";
+import { GlassCard } from "@glinui/ui";
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -37,9 +38,9 @@ export default function TransactionsPage() {
 
   if (loading) {
     return (
-      <div className="container items-center justify-center">
-        <div className="loading-pulse">
-          <p className="text-secondary">Loading...</p>
+      <div className="flex w-full max-w-md mx-auto p-4 min-h-screen items-center justify-center">
+        <div className="animate-pulse">
+          <p className="text-muted">Loading...</p>
         </div>
       </div>
     );
@@ -55,48 +56,48 @@ export default function TransactionsPage() {
   }, {} as Record<string, Transaction[]>);
 
   return (
-    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
-      <header style={{ marginBottom: "1.5rem", paddingTop: "0.5rem" }}>
-        <h1 className="text-h2">History</h1>
-        <p className="text-sm" style={{ marginTop: "0.25rem" }}>Tap any transaction to edit or delete.</p>
+    <div className="w-full max-w-md mx-auto flex flex-col p-4 pb-24 min-h-screen animate-slide-up">
+      <header className="mb-6 pt-2">
+        <h1 className="text-2xl font-bold tracking-tight">History</h1>
+        <p className="text-sm text-muted mt-1">Tap any transaction to edit or delete.</p>
       </header>
 
       {transactions.length === 0 ? (
-        <div className="card-static text-center" style={{ padding: "3rem 1rem" }}>
-          <p className="text-secondary" style={{ marginBottom: "0.25rem" }}>No transactions found.</p>
-          <p className="text-xs">Start by adding your first expense.</p>
-        </div>
+        <GlassCard className="text-center py-12 px-4">
+          <p className="text-muted font-medium mb-1">No transactions found.</p>
+          <p className="text-xs text-muted/70">Start by adding your first expense.</p>
+        </GlassCard>
       ) : (
         <div className="flex flex-col gap-6">
           {Object.entries(grouped).map(([monthYear, items], groupIdx) => (
-            <div key={monthYear} className={`flex flex-col gap-2 animate-slide-up stagger-${Math.min(groupIdx + 1, 5)}`}>
-              <div className="flex items-center gap-2" style={{ marginBottom: "0.25rem" }}>
-                <h3 className="section-header">{monthYear}</h3>
-                <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+            <div key={monthYear} className={`flex flex-col gap-3 animate-slide-up stagger-${Math.min(groupIdx + 1, 5)}`}>
+              <div className="flex items-center gap-3">
+                <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">{monthYear}</h3>
+                <div className="flex-1 h-px bg-border" />
               </div>
-              <div className="flex flex-col gap-2">
-                {items.map((t) => {
+              <GlassCard className="p-1 flex flex-col gap-1">
+                {items.map((t, idx) => {
                   const cat = getCategoryDetails(t.category);
                   const Icon = cat.icon;
                   const isIncome = (t.type || "expense") === "income";
                   
                   return (
-                    <Link href={`/edit-transaction/${t.id}`} key={t.id} style={{ textDecoration: "none" }}>
-                      <div className="card-static flex items-center justify-between" style={{ padding: "0.875rem", cursor: "pointer" }}>
+                    <Link href={`/edit-transaction/${t.id}`} key={t.id} className="block">
+                      <div className="flex items-center justify-between p-3 rounded-xl hover:bg-foreground/5 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div style={{ padding: "0.5rem", borderRadius: "var(--radius-md)", background: `${cat.color}12`, color: cat.color }}>
-                            <Icon size={18} />
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-background/50 border border-border shadow-sm">
+                            <Icon size={18} color={cat.color} />
                           </div>
                           <div>
-                            <p style={{ fontWeight: 500, fontSize: "0.875rem", lineHeight: 1.3 }}>{cat.label}</p>
-                            {t.notes && <p className="text-xs" style={{ marginTop: "0.125rem" }}>{t.notes}</p>}
+                            <p className="font-medium text-sm leading-tight text-foreground">{cat.label}</p>
+                            {t.notes && <p className="text-xs text-muted mt-0.5">{t.notes}</p>}
                           </div>
                         </div>
                         <div className="text-right">
-                          <p style={{ fontWeight: 600, fontSize: "0.875rem", color: isIncome ? "var(--success)" : "var(--text-primary)" }}>
+                          <p className={`font-bold text-sm ${isIncome ? "text-success" : "text-foreground"}`}>
                             {isIncome ? "+" : "-"}MVR {Number(t.amount).toFixed(2)}
                           </p>
-                          <p className="text-xs" style={{ marginTop: "0.125rem" }}>
+                          <p className="text-xs text-muted mt-0.5">
                             {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </p>
                         </div>
@@ -104,7 +105,7 @@ export default function TransactionsPage() {
                     </Link>
                   );
                 })}
-              </div>
+              </GlassCard>
             </div>
           ))}
         </div>

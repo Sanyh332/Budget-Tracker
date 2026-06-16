@@ -76,9 +76,12 @@ export default function BottomNav() {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="relative grid grid-cols-3 place-items-center w-full h-[68px] bg-white/80 dark:bg-zinc-950/80 backdrop-blur-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-[2.5rem] border border-white/40 dark:border-white/10 px-2 pointer-events-auto touch-pan-y select-none"
+        className="relative grid grid-cols-3 place-items-center w-full h-[68px] bg-white/20 dark:bg-zinc-900/30 backdrop-blur-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-[2.5rem] border border-white/40 dark:border-white/10 px-2 pointer-events-auto touch-pan-y select-none"
       >
         
+        {/* Nav Bar Liquid Glass Reflection Layer */}
+        <div className="absolute inset-0 rounded-[2.5rem] backdrop-blur-[2px] opacity-40 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+
         {/* Sliding Indicator */}
         <div 
           className={`absolute top-1/2 w-[80px] h-[56px] rounded-full z-0 pointer-events-none ${isDragging && isDragIntent.current ? 'transition-none' : 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]'}`}
@@ -89,16 +92,19 @@ export default function BottomNav() {
             scale: isDragging ? 1.15 : (activeIndex !== -1 ? 1 : 0.8)
           }}
         >
-          {/* Subtle liquid glass iridescent glow */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-200 via-fuchsia-300 to-yellow-200 dark:from-cyan-600 dark:via-fuchsia-700 dark:to-yellow-600 blur-[8px] opacity-50 scale-105" />
+          {/* Subtle blurred shadow glow instead of color gradient */}
+          <div className="absolute inset-0 rounded-full bg-black/5 dark:bg-white/5 blur-[8px] scale-105" />
           
-          {/* Gradient border effect */}
-          <div className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-tr from-cyan-300 via-fuchsia-300 to-yellow-300 dark:from-cyan-500 dark:via-fuchsia-500 dark:to-yellow-500 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-            <div className="w-full h-full bg-white dark:bg-zinc-900 rounded-full" />
+          {/* Neutral glass border effect */}
+          <div className="absolute inset-0 rounded-full border-[1.5px] border-white/60 dark:border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <div className="w-full h-full bg-white/20 dark:bg-zinc-900/30 backdrop-blur-[8px] rounded-full" />
           </div>
           
           {/* Inner glass highlight */}
-          <div className="absolute inset-0 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)]" />
+          <div className="absolute inset-0 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.9)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] pointer-events-none" />
+          
+          {/* Extra liquid glass reflection layer */}
+          <div className="absolute inset-0 rounded-full backdrop-blur-[2px] opacity-40 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
         </div>
 
         {/* Nav Items */}

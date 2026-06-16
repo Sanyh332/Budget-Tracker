@@ -265,8 +265,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Floating Action Button */}
-      <Link href="/add-transaction" className="fixed bottom-[5.5rem] right-6 w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-50">
-        <Plus size={24} />
+      <Link href="/add-transaction" className="fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] right-6 w-14 h-14 rounded-full flex items-center justify-center z-50 group transition-all duration-300 hover:scale-110 hover:-translate-y-1">
+        {/* Main liquid glass background */}
+        <div className="absolute inset-0 rounded-full bg-white/20 dark:bg-zinc-900/30 backdrop-blur-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] border-[1.5px] border-white/60 dark:border-white/20" />
+        {/* Gloss reflection layer */}
+        <div className="absolute inset-0 rounded-full backdrop-blur-[2px] opacity-40 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+        {/* Subtle shadow glow behind */}
+        <div className="absolute inset-0 rounded-full bg-black/5 dark:bg-white/5 blur-[8px] -z-10" />
+        
+        <Plus size={24} className="relative z-10 text-foreground dark:text-white group-hover:scale-110 transition-transform" />
       </Link>
     </div>
   );

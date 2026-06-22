@@ -7,7 +7,6 @@ import { Plus, LogOut, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
 import { getCategoryDetails } from "@/utils/categories";
 import { Transaction } from "@/utils/types";
-import { GlassCard, Button } from "@glinui/ui";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -44,9 +43,13 @@ export default function DashboardPage() {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
       const [balanceRes, monthTxRes, recentTxRes, bgRes] = await Promise.all([
+        // 1. Calculate total balance on the server (no data transfer)
         supabase.rpc("get_balance"),
+        // 2. Only fetch THIS MONTH's transactions for breakdown
         supabase.from("transactions").select("amount,category,type").gte("created_at", monthStart).lte("created_at", monthEnd),
+        // 3. Only fetch the 8 most recent transactions for the list
         supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(8),
+        // 4. Budgets (already small)
         supabase.from("budgets").select("category,amount")
       ]);
 
@@ -56,14 +59,17 @@ export default function DashboardPage() {
         setBudgets(bMap);
       }
 
+      // Balance from server function
       if (balanceRes.data !== null && !balanceRes.error) {
         setCurrentBalance(Number(balanceRes.data));
       }
 
+      // Recent transactions for the list
       if (recentTxRes.data && !recentTxRes.error) {
         setTransactions(recentTxRes.data);
       }
 
+      // This month's breakdown (only month data, not all-time)
       if (monthTxRes.data && !monthTxRes.error) {
         let incMonth = 0;
         let expMonth = 0;
@@ -92,68 +98,66 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex w-full max-w-md mx-auto p-4 min-h-screen items-center justify-center">
-        <div className="animate-pulse">
-          <p className="text-muted">Loading...</p>
+      <div className="container items-center justify-center">
+        <div className="loading-pulse">
+          <p className="text-secondary">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col p-4 pb-24 min-h-screen">
+    <div className="container" style={{ paddingBottom: "6rem" }}>
       {/* Header */}
-      <header className="flex justify-between items-center mb-6 pt-2">
+      <header className="flex justify-between items-center animate-slide-up" style={{ marginBottom: "1.5rem", paddingTop: "0.5rem" }}>
         <div>
-          <p className="text-sm text-muted mb-0.5">Welcome back,</p>
-          <h1 className="text-2xl font-bold">{username || "User"} 👋</h1>
+          <p className="text-sm" style={{ marginBottom: "0.125rem" }}>Welcome back,</p>
+          <h1 className="text-h2">{username || "User"}</h1>
         </div>
-        <Button 
-          variant="ghost" 
+        <button 
+          className="btn-icon" 
           onClick={async () => {
             await supabase.auth.signOut();
             router.push("/login");
           }}
-          className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
         >
-          <LogOut size={20} className="text-muted" />
-        </Button>
+          <LogOut size={20} />
+        </button>
       </header>
 
       {/* Balance Card */}
-      <GlassCard className="mb-6 p-6">
-        <p className="text-sm text-muted mb-1">Current Balance</p>
-        <h2 className={`text-4xl font-extrabold mb-5 tracking-tight ${currentBalance < 0 ? "text-destructive" : "text-foreground"}`}>
+      <div className="card-static animate-slide-up stagger-1" style={{ marginBottom: "1.5rem" }}>
+        <p className="text-sm" style={{ marginBottom: "0.25rem" }}>Current Balance</p>
+        <h2 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0.25rem 0 1.25rem", letterSpacing: "-0.03em", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
           MVR {currentBalance.toFixed(2)}
         </h2>
         
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-success/10 rounded-xl p-3 border border-success/20">
-            <div className="flex items-center gap-1 mb-1">
-              <ArrowUpRight size={14} className="text-success" /> 
-              <span className="text-xs text-muted">Income</span>
-              <Link href="/add-income" className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full bg-success text-white shadow-sm hover:scale-105 transition-transform">
-                <Plus size={12} strokeWidth={3} />
-                <span className="text-[10px] font-bold tracking-wider">ADD</span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ background: "var(--success-glow)", borderRadius: "var(--radius-md)", padding: "0.75rem" }}>
+            <div className="flex items-center gap-1" style={{ marginBottom: "0.25rem" }}>
+              <ArrowUpRight size={14} color="var(--success)" /> 
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Income</span>
+              <Link href="/add-income" style={{ marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "var(--success)", color: "white", textDecoration: "none" }}>
+                <Plus size={11} />
               </Link>
             </div>
-            <p className="font-bold text-lg text-foreground">MVR {incomeThisMonth.toFixed(2)}</p>
+            <p style={{ fontWeight: 700, fontSize: "1.0625rem" }}>MVR {incomeThisMonth.toFixed(2)}</p>
           </div>
-          <div className="bg-destructive/10 rounded-xl p-3 border border-destructive/20">
-            <div className="flex items-center gap-1 mb-1">
-              <ArrowDownRight size={14} className="text-destructive" />
-              <span className="text-xs text-muted">Spent</span>
+          <div style={{ background: "var(--danger-glow)", borderRadius: "var(--radius-md)", padding: "0.75rem" }}>
+            <div className="flex items-center gap-1" style={{ marginBottom: "0.25rem" }}>
+              <ArrowDownRight size={14} color="var(--danger)" />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Spent</span>
             </div>
-            <p className="font-bold text-lg text-foreground">MVR {spentThisMonth.toFixed(2)}</p>
+            <p style={{ fontWeight: 700, fontSize: "1.0625rem" }}>MVR {spentThisMonth.toFixed(2)}</p>
           </div>
         </div>
-      </GlassCard>
+      </div>
 
       {/* Expense Category Breakdown */}
       {categoryBreakdown.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Spending this Month</h3>
-          <GlassCard className="flex flex-col gap-4 p-4">
+        <div className="animate-slide-up stagger-2" style={{ marginBottom: "1.5rem" }}>
+          <h3 className="section-header" style={{ marginBottom: "0.75rem" }}>Spending this Month</h3>
+          <div className="card-static flex flex-col gap-4">
             {categoryBreakdown.map(([catId, amount]) => {
               const cat = getCategoryDetails(catId);
               const Icon = cat.icon;
@@ -168,112 +172,82 @@ export default function DashboardPage() {
               }
 
               const isOverBudget = hasBudget && amount > budgetLimit;
-              const barColor = isOverBudget ? "var(--color-destructive)" : cat.color;
+              const barColor = isOverBudget ? "var(--danger)" : cat.color;
               
               return (
                 <div key={catId} className="flex flex-col gap-2">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-background/50 border border-border">
-                        <Icon size={16} color={cat.color} />
+                      <div style={{ padding: "0.375rem", borderRadius: "var(--radius-sm)", background: `${cat.color}12`, color: cat.color }}>
+                        <Icon size={14} />
                       </div>
-                      <div>
-                        <p className="font-medium text-sm text-foreground">{cat.label}</p>
-                        {hasBudget && (
-                          <p className="text-xs text-muted">
-                            MVR {amount.toFixed(0)} / {budgetLimit}
-                          </p>
-                        )}
-                      </div>
+                      <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>{cat.label}</span>
                     </div>
-                    {!hasBudget && (
-                      <p className="font-semibold text-sm text-foreground">MVR {amount.toFixed(0)}</p>
-                    )}
+                    <div className="text-right">
+                      <span style={{ fontWeight: 600, fontSize: "0.875rem", color: isOverBudget ? "var(--danger)" : "inherit" }}>
+                        MVR {amount.toFixed(2)}
+                      </span>
+                      {hasBudget && <span className="text-xs" style={{ marginLeft: "0.25rem" }}>/ {budgetLimit.toFixed(0)}</span>}
+                    </div>
                   </div>
-                  
-                  <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-500" 
-                      style={{ 
-                        width: `${percentage}%`,
-                        backgroundColor: barColor 
-                      }} 
-                    />
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${percentage}%`, backgroundColor: barColor }} />
                   </div>
                 </div>
               );
             })}
-          </GlassCard>
+          </div>
         </div>
       )}
 
       {/* Recent Transactions */}
-      <div>
-        <div className="flex justify-between items-end mb-3">
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Recent Transactions</h3>
-          <Link href="/transactions" className="text-xs text-accent font-medium hover:underline">
-            View All
-          </Link>
+      <div className="animate-slide-up stagger-3">
+        <div className="flex justify-between items-center" style={{ marginBottom: "0.75rem" }}>
+          <h3 className="section-header">Recent Transactions</h3>
+          <Link href="/transactions" style={{ fontSize: "0.75rem", color: "var(--accent-primary)", fontWeight: 600 }}>View All</Link>
         </div>
-
+        
         {transactions.length === 0 ? (
-          <GlassCard className="p-6 text-center">
-            <p className="text-muted text-sm mb-4">No transactions yet.</p>
-            <div className="flex gap-3">
-              <Link href="/add-income" className="flex-1">
-                <Button variant="liquid" className="w-full !bg-success text-white shadow-[0_8px_32px_var(--success-glow)] border-none">Add Income</Button>
-              </Link>
-              <Link href="/add-transaction" className="flex-1">
-                <Button variant="liquid" className="w-full">Add Expense</Button>
-              </Link>
-            </div>
-          </GlassCard>
+          <div className="card-static text-center" style={{ padding: "3rem 1rem" }}>
+            <p className="text-secondary" style={{ marginBottom: "0.25rem" }}>No transactions yet.</p>
+            <p className="text-xs">Tap the + button to add one.</p>
+          </div>
         ) : (
-          <GlassCard className="flex flex-col gap-1 p-2">
-            {transactions.map((t) => {
+          <div className="flex flex-col gap-2">
+            {transactions.slice(0, 8).map((t) => {
               const cat = getCategoryDetails(t.category);
               const Icon = cat.icon;
-              const type = t.type || "expense";
-              const isIncome = type === "income";
-
+              const isIncome = (t.type || "expense") === "income";
+              
               return (
-                <Link key={t.id} href={`/edit-transaction/${t.id}`} className="block">
-                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-background/50 border border-border shadow-sm">
-                        <Icon size={18} color={cat.color} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{cat.label}</p>
-                        <p className="text-xs text-muted">
-                          {new Date(t.created_at).toLocaleDateString("en-GB", {
-                            day: "numeric", month: "short"
-                          })} 
-                          {t.notes ? ` • ${t.notes}` : ""}
-                        </p>
-                      </div>
+                <div key={t.id} className="card-static flex items-center justify-between" style={{ padding: "0.875rem" }}>
+                  <div className="flex items-center gap-3">
+                    <div style={{ padding: "0.5rem", borderRadius: "var(--radius-md)", background: `${cat.color}12`, color: cat.color }}>
+                      <Icon size={18} />
                     </div>
-                    <p className={`font-bold text-sm ${isIncome ? "text-success" : "text-foreground"}`}>
+                    <div>
+                      <p style={{ fontWeight: 500, fontSize: "0.875rem", lineHeight: 1.3 }}>{cat.label}</p>
+                      {t.notes && <p className="text-xs" style={{ marginTop: "0.125rem" }}>{t.notes}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p style={{ fontWeight: 600, fontSize: "0.875rem", color: isIncome ? "var(--success)" : "var(--text-primary)" }}>
                       {isIncome ? "+" : "-"}MVR {Number(t.amount).toFixed(2)}
                     </p>
+                    <p className="text-xs" style={{ marginTop: "0.125rem" }}>
+                      {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </p>
                   </div>
-                </Link>
+                </div>
               );
             })}
-          </GlassCard>
+          </div>
         )}
       </div>
 
-      {/* Floating Action Button */}
-      <Link href="/add-transaction" className="fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] right-6 w-14 h-14 rounded-full flex items-center justify-center z-50 group transition-all duration-300 hover:scale-110 hover:-translate-y-1">
-        {/* Main liquid glass background */}
-        <div className="absolute inset-0 rounded-full bg-white/20 dark:bg-zinc-900/30 backdrop-blur-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] border-[1.5px] border-white/60 dark:border-white/20" />
-        {/* Gloss reflection layer */}
-        <div className="absolute inset-0 rounded-full backdrop-blur-[2px] opacity-40 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-        {/* Subtle shadow glow behind */}
-        <div className="absolute inset-0 rounded-full bg-black/5 dark:bg-white/5 blur-[8px] -z-10" />
-        
-        <Plus size={24} className="relative z-10 text-foreground dark:text-white group-hover:scale-110 transition-transform" />
+      {/* FAB */}
+      <Link href="/add-transaction" className="fab" style={{ display: "flex", textDecoration: "none" }}>
+        <Plus size={24} />
       </Link>
     </div>
   );

@@ -6,7 +6,6 @@ import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { EXPENSE_CATEGORIES as CATEGORIES } from "@/utils/categories";
-import { GlassCard, Button, Input } from "@glinui/ui";
 
 export default function AddTransactionPage() {
   const router = useRouter();
@@ -49,26 +48,26 @@ export default function AddTransactionPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col p-4 pb-32 min-h-screen animate-slide-up">
-      <header className="flex items-center gap-3 mb-6 pt-2">
-        <Link href="/dashboard" className="w-10 h-10 rounded-full flex items-center justify-center bg-background/50 border border-border shadow-sm hover:bg-foreground/5 transition-colors">
+    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
+      <header className="flex items-center gap-3" style={{ marginBottom: "2rem", paddingTop: "0.5rem" }}>
+        <Link href="/dashboard" className="btn-icon">
           <ArrowLeft size={22} />
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Add Expense</h1>
+        <h1 className="text-h2">Add Expense</h1>
       </header>
 
       {error && (
-        <div className="bg-destructive/10 p-3 rounded-xl mb-4">
-          <p className="text-destructive text-sm font-medium">{error}</p>
+        <div style={{ background: "var(--danger-glow)", padding: "0.75rem", borderRadius: "var(--radius-md)", marginBottom: "1rem" }}>
+          <p className="text-danger" style={{ fontSize: "0.8125rem" }}>{error}</p>
         </div>
       )}
 
       <div className="flex flex-col gap-6">
         {/* Amount Input */}
-        <GlassCard className="text-center py-10 px-4 flex flex-col items-center">
-          <p className="text-sm text-muted font-medium mb-3">Amount</p>
-          <div className="flex items-center justify-center gap-2 text-5xl font-extrabold tracking-tight">
-            <span className="text-muted text-xl font-medium">MVR</span>
+        <div className="card-static text-center" style={{ padding: "2.5rem 1rem" }}>
+          <p className="text-sm" style={{ marginBottom: "0.75rem" }}>Amount</p>
+          <div className="flex items-center justify-center gap-2" style={{ fontSize: "2.75rem", fontWeight: 800, letterSpacing: "-0.03em" }}>
+            <span style={{ color: "var(--text-tertiary)", fontSize: "1.25rem", fontWeight: 500 }}>MVR</span>
             <input
               type="number"
               value={amount}
@@ -77,16 +76,26 @@ export default function AddTransactionPage() {
               autoFocus
               step="0.01"
               min="0"
-              className="bg-transparent border-none outline-none text-center p-0 m-0 w-[4ch] max-w-full"
-              style={{ width: amount.length > 0 ? `${Math.max(amount.length + 1, 3)}ch` : "4ch" }}
+              style={{
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "inherit",
+                fontSize: "inherit",
+                fontWeight: "inherit",
+                fontFamily: "inherit",
+                width: amount.length > 0 ? `${Math.max(amount.length + 1, 3)}ch` : "4ch",
+                maxWidth: "100%",
+                textAlign: "center"
+              }}
             />
           </div>
-        </GlassCard>
+        </div>
 
         {/* Category Selection */}
         <div>
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Category</p>
-          <div className="grid grid-cols-3 gap-3">
+          <p className="section-header" style={{ marginBottom: "0.75rem" }}>Category</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.625rem" }}>
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = category === cat.id;
@@ -94,19 +103,15 @@ export default function AddTransactionPage() {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all duration-200 border ${
-                    isSelected 
-                      ? "border-transparent shadow-md scale-105" 
-                      : "border-border bg-background/40 hover:bg-background/80"
-                  }`}
+                  className={`category-chip ${isSelected ? "active" : ""}`}
                   style={{
-                    backgroundColor: isSelected ? `${cat.color}15` : undefined,
                     borderColor: isSelected ? cat.color : undefined,
-                    color: isSelected ? cat.color : "var(--color-foreground)",
+                    background: isSelected ? `${cat.color}12` : undefined,
+                    color: isSelected ? cat.color : undefined,
                   }}
                 >
-                  <Icon size={24} color={isSelected ? cat.color : "currentColor"} />
-                  <span className={`text-xs ${isSelected ? "font-bold" : "font-medium"}`}>{cat.label}</span>
+                  <Icon size={22} />
+                  <span style={{ fontWeight: isSelected ? 600 : undefined }}>{cat.label}</span>
                 </button>
               );
             })}
@@ -115,26 +120,25 @@ export default function AddTransactionPage() {
 
         {/* Notes */}
         <div>
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Notes (optional)</p>
-          <Input
-            variant="glass"
+          <p className="section-header" style={{ marginBottom: "0.5rem" }}>Notes (optional)</p>
+          <input
             type="text"
+            className="input-field"
             placeholder="What was this for?"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-background/50"
           />
         </div>
 
         {/* Submit */}
-        <Button 
-          variant="liquid" 
-          className="w-full mt-4 py-6 text-base font-bold shadow-[0_8px_32px_var(--color-accent)]" 
+        <button 
+          className="btn btn-primary w-full" 
+          style={{ padding: "1rem", fontSize: "1rem" }}
           onClick={handleSave}
           disabled={loading}
         >
           {loading ? "Saving..." : "Save Expense"}
-        </Button>
+        </button>
       </div>
     </div>
   );

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { EXPENSE_CATEGORIES } from "@/utils/categories";
-import { GlassCard, Button, Input } from "@glinui/ui";
 
 export default function BudgetPage() {
   const router = useRouter();
@@ -120,9 +119,9 @@ export default function BudgetPage() {
 
   if (loading) {
     return (
-      <div className="flex w-full max-w-md mx-auto p-4 min-h-screen items-center justify-center">
-        <div className="animate-pulse">
-          <p className="text-muted">Loading...</p>
+      <div className="container items-center justify-center">
+        <div className="loading-pulse">
+          <p className="text-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -142,129 +141,157 @@ export default function BudgetPage() {
   const projectedTotal = currentBalance + (plannedSavings * monthsDiff);
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col p-4 pb-24 min-h-screen animate-slide-up">
-      <header className="mb-6 pt-2">
-        <h1 className="text-2xl font-bold tracking-tight">Budget Planner</h1>
-        <p className="text-sm text-muted mt-1">Set your monthly category limits.</p>
+    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
+      <header style={{ marginBottom: "1.5rem", paddingTop: "0.5rem" }}>
+        <h1 className="text-h2">Budget Planner</h1>
+        <p className="text-sm" style={{ marginTop: "0.25rem" }}>Set your monthly category limits.</p>
       </header>
 
       {/* Summary Card */}
-      <GlassCard className="mb-6 p-5">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-medium">Expected Income</span>
+      <div className="card-static animate-slide-up stagger-1" style={{ marginBottom: "1.5rem" }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: "1rem" }}>
+          <span className="text-sm" style={{ fontWeight: 500 }}>Expected Income</span>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">MVR</span>
-            <Input 
-              variant="glass"
+            <span className="text-xs">MVR</span>
+            <input 
               type="number" 
               value={expectedIncome || ""}
               onChange={(e) => setExpectedIncome(Number(e.target.value) || 0)}
               placeholder="0"
-              className="w-[100px] text-right font-semibold text-success bg-background/50"
+              style={{
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--success)",
+                padding: "0.375rem 0.5rem",
+                width: "100px",
+                textAlign: "right",
+                fontWeight: 600,
+                fontFamily: "inherit",
+                fontSize: "0.875rem"
+              }}
             />
           </div>
         </div>
 
-        <div className="w-full h-px bg-border my-4" />
+        <div className="divider" style={{ margin: "0.75rem 0" }} />
 
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-medium">Total Budgeted</span>
-          <span className="font-semibold text-[0.9375rem]">MVR {totalBudgeted.toFixed(2)}</span>
+        <div className="flex justify-between items-center" style={{ marginBottom: "0.75rem" }}>
+          <span className="text-sm" style={{ fontWeight: 500 }}>Total Budgeted</span>
+          <span style={{ fontWeight: 600, fontSize: "0.9375rem" }}>MVR {totalBudgeted.toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between items-center">
-          <span className="font-semibold text-[0.9375rem]">Planned Savings</span>
-          <span className={`font-bold text-lg ${plannedSavings >= 0 ? "text-success" : "text-destructive"}`}>
+          <span style={{ fontWeight: 600, fontSize: "0.9375rem" }}>Planned Savings</span>
+          <span style={{ fontWeight: 700, fontSize: "1.0625rem", color: plannedSavings >= 0 ? "var(--success)" : "var(--danger)" }}>
             MVR {plannedSavings.toFixed(2)}
           </span>
         </div>
-      </GlassCard>
+      </div>
 
       {error && (
-        <div className="bg-destructive/10 p-3 rounded-xl mb-4">
-          <p className="text-destructive text-sm font-medium">{error}</p>
+        <div style={{ background: "var(--danger-glow)", padding: "0.75rem", borderRadius: "var(--radius-md)", marginBottom: "1rem" }}>
+          <p className="text-danger" style={{ fontSize: "0.8125rem" }}>{error}</p>
         </div>
       )}
       {success && (
-        <div className="bg-success/10 p-3 rounded-xl mb-4">
-          <p className="text-success text-sm font-medium">Budgets saved successfully!</p>
+        <div style={{ background: "var(--success-glow)", padding: "0.75rem", borderRadius: "var(--radius-md)", marginBottom: "1rem" }}>
+          <p className="text-success" style={{ fontSize: "0.8125rem" }}>Budgets saved successfully!</p>
         </div>
       )}
 
       <div className="animate-slide-up stagger-2">
-        <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Category Limits</h3>
+        <h3 className="section-header" style={{ marginBottom: "0.75rem" }}>Category Limits</h3>
         
-        <GlassCard className="p-0 overflow-hidden">
+        <div className="card-static" style={{ padding: 0, overflow: "hidden" }}>
           {EXPENSE_CATEGORIES.map((cat, idx) => {
             const Icon = cat.icon;
             const currentVal = budgets[cat.id] || "";
             
             return (
-              <div key={cat.id} className={`flex justify-between items-center px-4 py-3 ${idx < EXPENSE_CATEGORIES.length - 1 ? 'border-b border-border' : ''}`}>
+              <div key={cat.id} className="flex justify-between items-center" style={{ 
+                padding: "0.875rem 1rem",
+                borderBottom: idx < EXPENSE_CATEGORIES.length - 1 ? "1px solid var(--border)" : "none"
+              }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-background/50 border border-border shadow-sm">
-                    <Icon size={16} color={cat.color} />
+                  <div style={{ padding: "0.375rem", borderRadius: "var(--radius-sm)", background: `${cat.color}12`, color: cat.color }}>
+                    <Icon size={16} />
                   </div>
-                  <span className="font-medium text-sm">{cat.label}</span>
+                  <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>{cat.label}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted">MVR</span>
-                  <Input 
-                    variant="glass"
+                  <span className="text-xs">MVR</span>
+                  <input 
                     type="number" 
                     placeholder="0"
                     value={currentVal}
                     onChange={(e) => handleBudgetChange(cat.id, e.target.value)}
-                    className="w-[80px] text-right bg-background/50"
+                    style={{
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)",
+                      color: "var(--text-primary)",
+                      padding: "0.375rem 0.5rem",
+                      width: "80px",
+                      textAlign: "right",
+                      fontFamily: "inherit",
+                      fontSize: "0.875rem"
+                    }}
                   />
                 </div>
               </div>
             );
           })}
-        </GlassCard>
+        </div>
       </div>
 
       {/* Motivational Projection Card */}
-      <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-accent to-accent/80 text-white shadow-[0_8px_32px_var(--color-accent)] animate-slide-up stagger-3 relative overflow-hidden">
-        <div className="absolute top-[-50%] right-[-30%] w-[200px] h-[200px] bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute bottom-[-30%] left-[-20%] w-[160px] h-[160px] bg-white/5 rounded-full blur-xl pointer-events-none" />
-        
-        <h3 className="font-bold mb-4 flex items-center gap-2 text-[0.9375rem] relative z-10">
+      <div className="hero-card animate-slide-up stagger-3" style={{ marginTop: "1.5rem" }}>
+        <h3 style={{ fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem", position: "relative", zIndex: 1, fontSize: "0.9375rem" }}>
           🚀 Savings Projection
         </h3>
         
-        <div className="flex justify-between items-center mb-4 relative z-10">
-          <span className="text-white/80 text-sm">Project until:</span>
+        <div className="flex justify-between items-center" style={{ marginBottom: "1rem", position: "relative", zIndex: 1 }}>
+          <span style={{ opacity: 0.85, fontSize: "0.8125rem" }}>Project until:</span>
           <input 
             type="month" 
             value={targetDate}
             onChange={(e) => setTargetDate(e.target.value)}
-            className="bg-white/15 border border-white/20 rounded-lg text-white px-3 py-1.5 outline-none text-sm w-32"
+            style={{
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: "var(--radius-md)",
+              color: "white",
+              padding: "0.375rem 0.5rem",
+              outline: "none",
+              fontFamily: "inherit",
+              fontSize: "0.8125rem"
+            }}
           />
         </div>
 
-        <div className="text-center py-3 relative z-10">
-          <p className="text-white/80 text-sm mb-2">
+        <div className="text-center" style={{ padding: "0.75rem 0", position: "relative", zIndex: 1 }}>
+          <p style={{ opacity: 0.85, fontSize: "0.8125rem", marginBottom: "0.5rem" }}>
             In <strong>{monthsDiff} month{monthsDiff !== 1 && 's'}</strong>, your balance will be:
           </p>
-          <h2 className="text-4xl font-extrabold m-0 tracking-tight">
+          <h2 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0", letterSpacing: "-0.03em" }}>
             MVR {projectedTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
-          <p className="text-xs text-white/70 mt-2">
+          <p style={{ fontSize: "0.6875rem", opacity: 0.7, marginTop: "0.5rem" }}>
             Current Balance + {monthsDiff} × MVR {plannedSavings.toFixed(0)}
           </p>
         </div>
       </div>
 
-      <Button 
-        variant="liquid" 
-        className="w-full mt-6 py-6 text-base font-bold" 
+      <button 
+        className="btn btn-primary w-full" 
+        style={{ marginTop: "1.5rem", padding: "1rem", fontSize: "1rem" }}
         onClick={handleSave}
         disabled={saving}
       >
         {saving ? "Saving..." : "Save Budgets"}
-      </Button>
+      </button>
     </div>
   );
 }

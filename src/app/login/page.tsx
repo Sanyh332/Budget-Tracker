@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { Wallet } from "lucide-react";
-import { GlassCard, Button, Input } from "@glinui/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,64 +42,78 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full flex min-h-screen items-center justify-center p-4 relative bg-gradient-to-br from-background via-background to-accent/10 overflow-hidden">
+    <div className="container justify-center items-center" style={{ 
+      background: "linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-primary) 50%, rgba(99, 102, 241, 0.05) 100%)",
+      position: "relative"
+    }}>
       {/* Decorative orbs */}
-      <div className="absolute top-10 -right-10 w-[300px] h-[300px] rounded-full bg-accent/20 blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-[250px] h-[250px] rounded-full bg-accent/20 blur-[100px] pointer-events-none" />
+      <div style={{
+        position: "absolute", top: "10%", right: "-10%", width: "300px", height: "300px",
+        background: "radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)",
+        borderRadius: "50%", pointerEvents: "none"
+      }} />
+      <div style={{
+        position: "absolute", bottom: "15%", left: "-15%", width: "250px", height: "250px",
+        background: "radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)",
+        borderRadius: "50%", pointerEvents: "none"
+      }} />
 
-      <div className="w-full max-w-[380px] flex flex-col items-center gap-4 relative z-10 animate-slide-up">
+      <div className="flex flex-col items-center gap-4 animate-scale-in" style={{ width: "100%", maxWidth: "380px", position: "relative", zIndex: 1 }}>
         
         {/* Logo */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-[0_8px_32px_var(--color-accent)] mb-2">
+        <div style={{ 
+          background: "var(--gradient-hero)",
+          width: "4rem", height: "4rem",
+          borderRadius: "var(--radius-lg)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "var(--shadow-glow)",
+          marginBottom: "0.5rem"
+        }}>
           <Wallet size={28} color="white" />
         </div>
         
-        <div className="flex flex-col items-center text-center mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight mb-2">SpendTracker</h1>
-          <p className="text-sm text-muted">Manage your money seamlessly.</p>
+        <div className="flex flex-col items-center" style={{ marginBottom: "2rem" }}>
+          <h1 className="text-h1" style={{ marginBottom: "0.5rem" }}>SpendTracker</h1>
+          <p className="text-sm">Manage your money seamlessly.</p>
         </div>
 
-        <GlassCard className="w-full flex flex-col gap-4 p-8">
-          <form onSubmit={handleAuth} className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-center tracking-tight mb-2">
-              {isSignUp ? "Create an account" : "Welcome back"}
-            </h2>
-            
-            {error && <div className="text-destructive text-sm text-center bg-destructive/10 p-3 rounded-xl">{error}</div>}
-            
-            <Input
-              variant="glass"
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="py-6"
-            />
-            
-            <Input
-              variant="glass"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="py-6"
-            />
-            
-            <Button variant="liquid" type="submit" disabled={loading} className="w-full py-6 mt-2 text-base font-bold">
-              {loading ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
-            </Button>
-          </form>
-        </GlassCard>
+        <form onSubmit={handleAuth} className="card-static flex flex-col gap-4" style={{ width: "100%", padding: "2rem 1.5rem" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, textAlign: "center", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
+            {isSignUp ? "Create an account" : "Welcome back"}
+          </h2>
+          
+          {error && <div className="text-danger text-sm" style={{ textAlign: "center", background: "var(--danger-glow)", padding: "0.5rem", borderRadius: "var(--radius-md)" }}>{error}</div>}
+          
+          <input
+            type="email"
+            placeholder="Email address"
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          
+          <input
+            type="password"
+            placeholder="Password"
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          
+          <button type="submit" className="btn btn-primary w-full" disabled={loading} style={{ padding: "0.875rem", marginTop: "0.5rem" }}>
+            {loading ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
+          </button>
+        </form>
 
-        <Button 
-          variant="ghost" 
+        <button 
+          className="btn" 
+          style={{ background: "transparent", color: "var(--text-secondary)", fontSize: "0.8125rem" }}
           onClick={() => setIsSignUp(!isSignUp)}
-          className="text-muted text-sm mt-2"
         >
           {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-        </Button>
+        </button>
       </div>
     </div>
   );

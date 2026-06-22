@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/utils/categories";
-import { GlassCard, Button, Input } from "@glinui/ui";
 
 export default function EditTransactionPage() {
   const router = useRouter();
@@ -104,9 +103,9 @@ export default function EditTransactionPage() {
 
   if (loading) {
     return (
-      <div className="flex w-full max-w-md mx-auto p-4 min-h-screen items-center justify-center">
-        <div className="animate-pulse">
-          <p className="text-muted">Loading...</p>
+      <div className="container items-center justify-center">
+        <div className="loading-pulse">
+          <p className="text-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -115,17 +114,18 @@ export default function EditTransactionPage() {
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col p-4 pb-32 min-h-screen animate-slide-up">
-      <header className="flex items-center justify-between mb-6 pt-2">
+    <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>
+      <header className="flex items-center justify-between" style={{ marginBottom: "2rem", paddingTop: "0.5rem" }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center bg-background/50 border border-border shadow-sm hover:bg-foreground/5 transition-colors">
+          <button onClick={() => router.back()} className="btn-icon">
             <ArrowLeft size={22} />
           </button>
-          <h1 className="text-2xl font-bold tracking-tight">Edit {type === "income" ? "Income" : "Expense"}</h1>
+          <h1 className="text-h2">Edit {type === "income" ? "Income" : "Expense"}</h1>
         </div>
         <button 
           onClick={handleDelete} 
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors"
+          className="btn-icon"
+          style={{ color: "var(--danger)" }}
           disabled={deleting}
         >
           <Trash2 size={22} />
@@ -133,17 +133,17 @@ export default function EditTransactionPage() {
       </header>
 
       {error && (
-        <div className="bg-destructive/10 p-3 rounded-xl mb-4">
-          <p className="text-destructive text-sm font-medium">{error}</p>
+        <div style={{ background: "var(--danger-glow)", padding: "0.75rem", borderRadius: "var(--radius-md)", marginBottom: "1rem" }}>
+          <p className="text-danger" style={{ fontSize: "0.8125rem" }}>{error}</p>
         </div>
       )}
 
       <div className="flex flex-col gap-6">
         {/* Amount Input */}
-        <GlassCard className="text-center py-10 px-4 flex flex-col items-center">
-          <p className="text-sm text-muted font-medium mb-3">Amount</p>
-          <div className="flex items-center justify-center gap-2 text-5xl font-extrabold tracking-tight">
-            <span className="text-muted text-xl font-medium">MVR</span>
+        <div className="card-static text-center" style={{ padding: "2.5rem 1rem" }}>
+          <p className="text-sm" style={{ marginBottom: "0.75rem" }}>Amount</p>
+          <div className="flex items-center justify-center gap-2" style={{ fontSize: "2.75rem", fontWeight: 800, letterSpacing: "-0.03em" }}>
+            <span style={{ color: "var(--text-tertiary)", fontSize: "1.25rem", fontWeight: 500 }}>MVR</span>
             <input
               type="number"
               value={amount}
@@ -151,16 +151,26 @@ export default function EditTransactionPage() {
               placeholder="0.00"
               step="0.01"
               min="0"
-              className={`bg-transparent border-none outline-none text-center p-0 m-0 w-[4ch] max-w-full ${type === "income" ? "text-success" : "text-foreground"}`}
-              style={{ width: amount.length > 0 ? `${Math.max(amount.length + 1, 3)}ch` : "4ch" }}
+              style={{
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: type === "income" ? "var(--success)" : "var(--text-primary)",
+                fontSize: "inherit",
+                fontWeight: "inherit",
+                fontFamily: "inherit",
+                width: amount.length > 0 ? `${Math.max(amount.length + 1, 3)}ch` : "4ch",
+                maxWidth: "100%",
+                textAlign: "center"
+              }}
             />
           </div>
-        </GlassCard>
+        </div>
 
         {/* Category Selection */}
         <div>
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Category</p>
-          <div className="grid grid-cols-3 gap-3">
+          <p className="section-header" style={{ marginBottom: "0.75rem" }}>Category</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.625rem" }}>
             {categories.map((cat) => {
               const Icon = cat.icon;
               const isSelected = category === cat.id;
@@ -168,19 +178,15 @@ export default function EditTransactionPage() {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all duration-200 border ${
-                    isSelected 
-                      ? "border-transparent shadow-md scale-105" 
-                      : "border-border bg-background/40 hover:bg-background/80"
-                  }`}
+                  className={`category-chip ${isSelected ? "active" : ""}`}
                   style={{
-                    backgroundColor: isSelected ? `${cat.color}15` : undefined,
                     borderColor: isSelected ? cat.color : undefined,
-                    color: isSelected ? cat.color : "var(--color-foreground)",
+                    background: isSelected ? `${cat.color}12` : undefined,
+                    color: isSelected ? cat.color : undefined,
                   }}
                 >
-                  <Icon size={24} color={isSelected ? cat.color : "currentColor"} />
-                  <span className={`text-xs ${isSelected ? "font-bold" : "font-medium"}`}>{cat.label}</span>
+                  <Icon size={22} />
+                  <span style={{ fontWeight: isSelected ? 600 : undefined }}>{cat.label}</span>
                 </button>
               );
             })}
@@ -189,26 +195,25 @@ export default function EditTransactionPage() {
 
         {/* Notes */}
         <div>
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Notes (optional)</p>
-          <Input
-            variant="glass"
+          <p className="section-header" style={{ marginBottom: "0.5rem" }}>Notes (optional)</p>
+          <input
             type="text"
+            className="input-field"
             placeholder="What was this for?"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-background/50"
           />
         </div>
 
         {/* Submit */}
-        <Button 
-          variant="liquid" 
-          className={`w-full mt-4 py-6 text-base font-bold ${type === "income" ? "!bg-success shadow-[0_8px_32px_var(--success-glow)] text-white" : "shadow-[0_8px_32px_var(--accent-glow)]"}`}
+        <button 
+          className={`btn w-full ${type === "income" ? "btn-success" : "btn-primary"}`}
+          style={{ padding: "1rem", fontSize: "1rem" }}
           onClick={handleSave}
           disabled={saving || deleting}
         >
           {saving ? "Saving..." : "Save Changes"}
-        </Button>
+        </button>
       </div>
     </div>
   );

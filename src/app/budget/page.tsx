@@ -12,8 +12,8 @@ export default function BudgetPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Budgets map: { categoryId: amount }
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  // Budgets map: { categoryId: { amount, rollover_type } }
+  const [budgets, setBudgets] = useState<Record<string, { amount: number, rollover_type: 'sweep' | 'rollover' }>>({});
   const [expectedIncome, setExpectedIncome] = useState<number>(0);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
 
@@ -32,19 +32,22 @@ export default function BudgetPage() {
       }
 
       const [budgetsRes, balanceRes] = await Promise.all([
-        supabase.from("budgets").select("category,amount"),
+        supabase.from("budgets").select("category,amount,rollover_type"),
         supabase.rpc("get_balance")
       ]);
 
       if (budgetsRes.data && !budgetsRes.error) {
-        const budgetMap: Record<string, number> = {};
+        const budgetMap: Record<string, { amount: number, rollover_type: 'sweep' | 'rollover' }> = {};
         let income = 0;
         
         budgetsRes.data.forEach((b) => {
           if (b.category === "expected_income") {
             income = Number(b.amount);
           } else {
-            budgetMap[b.category] = Number(b.amount);
+            budgetMap[b.category] = { 
+              amount: Number(b.amount), 
+              rollover_type: b.rollover_type || 'sweep' 
+            };
           }
         });
 
@@ -65,7 +68,20 @@ export default function BudgetPage() {
   const handleBudgetChange = (category: string, value: string) => {
     setBudgets((prev) => ({
       ...prev,
-      [category]: Number(value) || 0,
+      [category]: {
+        amount: Number(value) || 0,
+        rollover_type: prev[category]?.rollover_type || 'sweep'
+      },
+    }));
+  };
+
+  const handleRolloverChange = (category: string, type: 'sweep' | 'rollover') => {
+    setBudgets((prev) => ({
+      ...prev,
+      [category]: {
+        amount: prev[category]?.amount || 0,
+        rollover_type: type
+      },
     }));
   };
 
@@ -87,16 +103,18 @@ export default function BudgetPage() {
 
       const toInsert = [
         ...Object.entries(budgets)
-          .filter(([_, amount]) => amount > 0)
-          .map(([cat, amount]) => ({
+          .filter(([_, data]) => data.amount > 0)
+          .map(([cat, data]) => ({
             user_id: user.id,
             category: cat,
-            amount: amount,
+            amount: data.amount,
+            rollover_type: data.rollover_type
           })),
         ...(expectedIncome > 0 ? [{
           user_id: user.id,
           category: "expected_income",
           amount: expectedIncome,
+          rollover_type: "sweep"
         }] : []),
       ];
 
@@ -127,7 +145,7 @@ export default function BudgetPage() {
     );
   }
 
-  const totalBudgeted = Object.values(budgets).reduce((a, b) => a + b, 0);
+  const totalBudgeted = Object.values(budgets).reduce((a, b) => a + b.amount, 0);
   const plannedSavings = expectedIncome - totalBudgeted;
 
   const monthsDiff = (() => {
@@ -206,7 +224,8 @@ export default function BudgetPage() {
         <div className="card-static" style={{ padding: 0, overflow: "hidden" }}>
           {EXPENSE_CATEGORIES.map((cat, idx) => {
             const Icon = cat.icon;
-            const currentVal = budgets[cat.id] || "";
+            const currentVal = budgets[cat.id]?.amount || "";
+            const currentRollover = budgets[cat.id]?.rollover_type || 'sweep';
             
             return (
               <div key={cat.id} className="flex justify-between items-center" style={{ 
@@ -221,6 +240,22 @@ export default function BudgetPage() {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <select 
+                    value={currentRollover}
+                    onChange={(e) => handleRolloverChange(cat.id, e.target.value as 'sweep' | 'rollover')}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--text-secondary)",
+                      fontSize: "0.75rem",
+                      cursor: "pointer",
+                      marginRight: "0.25rem",
+                      outline: "none"
+                    }}
+                  >
+                    <option value="sweep">🧹 Sweep</option>
+                    <option value="rollover">♻️ Roll</option>
+                  </select>
                   <span className="text-xs">MVR</span>
                   <input 
                     type="number" 

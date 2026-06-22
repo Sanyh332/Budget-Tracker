@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PieChart, List } from "lucide-react";
+import { Home, PieChart, List, PiggyBank } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -13,6 +13,7 @@ export default function BottomNav() {
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Home" },
     { href: "/budget", icon: PieChart, label: "Budget" },
+    { href: "/savings", icon: PiggyBank, label: "Savings" },
     { href: "/transactions", icon: List, label: "History" },
   ];
 

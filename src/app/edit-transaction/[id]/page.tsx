@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/utils/categories";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SPECIAL_CATEGORIES } from "@/utils/categories";
 
 export default function EditTransactionPage() {
   const router = useRouter();
@@ -111,7 +111,8 @@ export default function EditTransactionPage() {
     );
   }
 
-  const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const isSpecial = SPECIAL_CATEGORIES.some(c => c.id === category);
+  const categories = type === "income" ? INCOME_CATEGORIES : (isSpecial ? [...EXPENSE_CATEGORIES, ...SPECIAL_CATEGORIES] : EXPENSE_CATEGORIES);
 
   return (
     <div className="container animate-slide-up" style={{ paddingBottom: "6rem" }}>

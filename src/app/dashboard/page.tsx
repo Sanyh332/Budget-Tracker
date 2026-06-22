@@ -18,10 +18,12 @@ export default function DashboardPage() {
   const [currentBalance, setCurrentBalance] = useState(0);
   const [incomeThisMonth, setIncomeThisMonth] = useState(0);
   const [spentThisMonth, setSpentThisMonth] = useState(0);
+  const [sweptSavings, setSweptSavings] = useState<number>(0);
   
   // Breakdown & Budgets
   const [categoryBreakdown, setCategoryBreakdown] = useState<[string, number][]>([]);
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  const [budgets, setBudgets] = useState<Record<string, { amount: number, rollover_amount: number }>>({});
+  const [prorateRatio, setProrateRatio] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,21 +44,55 @@ export default function DashboardPage() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-      const [balanceRes, monthTxRes, recentTxRes, bgRes] = await Promise.all([
+      // 0. Finalize past months (Lazy evaluate)
+      await supabase.rpc("finalize_past_months");
+
+      const [balanceRes, monthTxRes, recentTxRes, bgRes, rolloverRes, sweptRes, firstTxRes] = await Promise.all([
         // 1. Calculate total balance on the server (no data transfer)
         supabase.rpc("get_balance"),
         // 2. Only fetch THIS MONTH's transactions for breakdown
         supabase.from("transactions").select("amount,category,type").gte("created_at", monthStart).lte("created_at", monthEnd),
         // 3. Only fetch the 8 most recent transactions for the list
         supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(8),
-        // 4. Budgets (already small)
-        supabase.from("budgets").select("category,amount")
+        // 4. Budgets
+        supabase.from("budgets").select("category,amount"),
+        // 5. Category rollovers
+        supabase.rpc("get_category_rollovers"),
+        // 6. Swept savings
+        supabase.rpc("get_swept_savings"),
+        // 7. First transaction for prorating
+        supabase.from("transactions").select("created_at").order("created_at", { ascending: true }).limit(1).single()
       ]);
 
+      if (firstTxRes && firstTxRes.data) {
+        const startDate = new Date(firstTxRes.data.created_at);
+        const startMonthStr = new Date(startDate.getFullYear(), startDate.getMonth(), 1).toISOString();
+        if (startMonthStr === monthStart) {
+          const totalDays = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+          const daysActive = totalDays - startDate.getDate() + 1;
+          setProrateRatio(daysActive / totalDays);
+        }
+      }
+
       if (bgRes.data && !bgRes.error) {
-        const bMap: Record<string, number> = {};
-        bgRes.data.forEach((b: any) => bMap[b.category] = Number(b.amount));
+        const bMap: Record<string, { amount: number, rollover_amount: number }> = {};
+        
+        const rMap: Record<string, number> = {};
+        if (rolloverRes.data && !rolloverRes.error) {
+           rolloverRes.data.forEach((r: any) => rMap[r.category] = Number(r.rollover_amount));
+        }
+
+        bgRes.data.forEach((b: any) => {
+           bMap[b.category] = {
+             amount: Number(b.amount),
+             rollover_amount: rMap[b.category] || 0
+           };
+        });
         setBudgets(bMap);
+      }
+
+      if (sweptRes.data !== null && !sweptRes.error) {
+        setSweptSavings(Number(sweptRes.data));
       }
 
       // Balance from server function
@@ -128,11 +164,18 @@ export default function DashboardPage() {
       {/* Balance Card */}
       <div className="card-static animate-slide-up stagger-1" style={{ marginBottom: "1.5rem" }}>
         <p className="text-sm" style={{ marginBottom: "0.25rem" }}>Current Balance</p>
-        <h2 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0.25rem 0 1.25rem", letterSpacing: "-0.03em", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
+        <h2 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0.25rem 0 0.5rem", letterSpacing: "-0.03em", color: currentBalance < 0 ? "var(--danger)" : "var(--text-primary)" }}>
           MVR {currentBalance.toFixed(2)}
         </h2>
         
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+        {sweptSavings > 0 && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "var(--accent-primary)", padding: "0.375rem 0.75rem", borderRadius: "100px", marginBottom: "1.25rem" }}>
+            <span style={{ fontSize: "0.75rem", color: "white", fontWeight: 600 }}>Swept Savings</span>
+            <span style={{ fontSize: "0.875rem", color: "white", fontWeight: 800 }}>MVR {sweptSavings.toFixed(2)}</span>
+          </div>
+        )}
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: sweptSavings > 0 ? "0" : "0.75rem" }}>
           <div style={{ background: "var(--success-glow)", borderRadius: "var(--radius-md)", padding: "0.75rem" }}>
             <div className="flex items-center gap-1" style={{ marginBottom: "0.25rem" }}>
               <ArrowUpRight size={14} color="var(--success)" /> 
@@ -161,7 +204,11 @@ export default function DashboardPage() {
             {categoryBreakdown.map(([catId, amount]) => {
               const cat = getCategoryDetails(catId);
               const Icon = cat.icon;
-              const budgetLimit = budgets[catId] || 0;
+              
+              const bData = budgets[catId];
+              const baseLimit = (bData?.amount || 0) * prorateRatio;
+              const rollover = bData?.rollover_amount || 0;
+              const budgetLimit = baseLimit + rollover;
               const hasBudget = budgetLimit > 0;
               
               let percentage = 0;
@@ -181,7 +228,10 @@ export default function DashboardPage() {
                       <div style={{ padding: "0.375rem", borderRadius: "var(--radius-sm)", background: `${cat.color}12`, color: cat.color }}>
                         <Icon size={14} />
                       </div>
-                      <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>{cat.label}</span>
+                      <div className="flex flex-col">
+                        <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>{cat.label}</span>
+                        {rollover > 0 && <span style={{ fontSize: "0.65rem", color: "var(--success)" }}>+{rollover.toFixed(0)} Rollover</span>}
+                      </div>
                     </div>
                     <div className="text-right">
                       <span style={{ fontWeight: 600, fontSize: "0.875rem", color: isOverBudget ? "var(--danger)" : "inherit" }}>

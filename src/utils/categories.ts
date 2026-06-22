@@ -1,7 +1,7 @@
 import { 
   Zap, ShoppingCart, CreditCard, Droplet, Home, Coffee, 
   Briefcase, Gift, Wallet, Utensils, Wrench, Gamepad2, GraduationCap, Users,
-  Hammer, Car, Scissors, Wifi, Smartphone
+  Hammer, Car, Scissors, Wifi, Smartphone, PiggyBank
 } from "lucide-react";
 
 export const EXPENSE_CATEGORIES = [
@@ -30,7 +30,11 @@ export const INCOME_CATEGORIES = [
   { id: "opening_balance", label: "Opening Balance", icon: Wallet, color: "#3b82f6" },
 ];
 
+export const SPECIAL_CATEGORIES = [
+  { id: "savings_withdrawal", label: "Savings Withdrawal", icon: PiggyBank, color: "#8b5cf6" },
+];
+
 export const getCategoryDetails = (category: string) => {
-  const allCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+  const allCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...SPECIAL_CATEGORIES];
   return allCategories.find((c) => c.id === category) || { icon: Coffee, color: "#a1a1aa", label: "Other" };
 };
